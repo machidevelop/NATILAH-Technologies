@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\solvers\dwave.py
+# hypothesis_version: 6.151.9
+
+[1e-10, 1.0, 1.5, 1000, '?', 'backend', 'chip_id', 'dwave_advantage', 'num_logical_qubits', 'num_qubits', 'num_reads', 'qpu_access_time', 'qpu_access_time_us', 'quantum_hw', 'timing', 'unknown']

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\quantum\kernel_detector.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1e-10, 0.05, 1.0, 'precomputed']

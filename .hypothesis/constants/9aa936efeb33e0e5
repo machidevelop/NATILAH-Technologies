@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\models\alert.py
+# hypothesis_version: 6.151.9
+
+[0.0, 'action', 'compute_saved_flops', 'confidence', 'convergence_score', 'cost_saved_usd', 'decisions', 'dominant_signals', 'gpu_id', 'job_id', 'metric', 'quality_impact', 'reason', 'redundancy_score', 'step_number', 'strain_ratio', 'strainer_method', 'task_id', 'tasks_analyzed', 'tasks_strained', 'threshold', 'time_saved_s', 'timestamp', 'value', 'verdict']

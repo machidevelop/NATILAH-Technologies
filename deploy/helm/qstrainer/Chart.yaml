@@ -1,0 +1,14 @@
+apiVersion: v2
+name: qstrainer
+description: Q-Strainer GPU Telemetry Filtering Engine
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - gpu
+  - telemetry
+  - quantum
+  - anomaly-detection
+  - nvidia
+maintainers:
+  - name: qstrainer-team

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\stages\threshold.py
+# hypothesis_version: 6.151.9
+
+[1e-09, 1e-08, 1e-07, 1e-05, 0.2, 0.3, 0.5, 0.85, 0.9, 0.95, 0.98, 'RedundancyStrainer', 'convergence', 'convergence_score', 'data', 'data_similarity', 'floor', 'gradient', 'gradient_norm', 'loss', 'loss_delta', 'low', 'param_update_floor', 'redundancy', 'threshold', 'warn']

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\models\frame.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.001, 10.0, 80.0, 256.0, 10000.0, 1000000000000.0, 1000, 'batch_size_norm', 'compute_cost_norm', 'convergence_score', 'data_similarity', 'epoch_progress', 'estimated_time_norm', 'flop_utilization', 'gradient_norm', 'gradient_variance', 'learning_rate', 'loss', 'loss_delta', 'throughput_ratio']

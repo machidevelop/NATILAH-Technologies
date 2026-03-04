@@ -1,0 +1,80 @@
+# Q-Strainer Docker Compose
+# Quick start: docker compose up
+# With GPU:    docker compose --profile gpu up
+
+services:
+  # ── Q-Strainer agent ─────────────────────────────────────────────────────
+  qstrainer:
+    build: .
+    container_name: qstrainer
+    restart: unless-stopped
+    ports:
+      - "9100:9100"  # Prometheus metrics
+    volumes:
+      - ./config/default.yaml:/etc/qstrainer/config.yaml:ro
+      - qstrainer-data:/var/lib/qstrainer
+    environment:
+      - QSTRAINER_AGENT__MODE=synthetic
+      - QSTRAINER_AGENT__FLEET_SIZE=8
+    depends_on:
+      - prometheus
+
+  # ── Q-Strainer with GPU (use --profile gpu) ──────────────────────────────
+  qstrainer-gpu:
+    build: .
+    container_name: qstrainer-gpu
+    restart: unless-stopped
+    profiles: ["gpu"]
+    ports:
+      - "9100:9100"
+    volumes:
+      - ./config/default.yaml:/etc/qstrainer/config.yaml:ro
+      - qstrainer-data:/var/lib/qstrainer
+    environment:
+      - QSTRAINER_AGENT__MODE=nvml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - prometheus
+
+  # ── Prometheus ───────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+
+  # ── Grafana ──────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=qstrainer
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/qstrainer-overview.json
+    depends_on:
+      - prometheus
+
+volumes:
+  qstrainer-data:
+  prometheus-data:
+  grafana-data:

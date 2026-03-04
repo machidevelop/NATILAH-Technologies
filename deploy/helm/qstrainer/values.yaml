@@ -1,0 +1,81 @@
+# Q-Strainer Helm values
+replicaCount: 1
+
+image:
+  repository: qstrainer
+  tag: "0.2.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Q-Strainer config
+config:
+  mode: synthetic        # synthetic | nvml
+  fleetSize: 8
+  emitThreshold: 0.3
+  heartbeatInterval: 100
+  checkpoint:
+    enabled: true
+    intervalSec: 300    # 5 minutes
+    maxCheckpoints: 5
+
+# GPU support (requires NVIDIA device plugin)
+gpu:
+  enabled: false
+  count: 1              # GPUs per pod
+
+# Prometheus metrics
+metrics:
+  enabled: true
+  port: 9100
+  serviceMonitor:
+    enabled: false
+    interval: 15s
+    namespace: ""
+    additionalLabels: {}
+
+service:
+  type: ClusterIP
+  port: 9100
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Persistence for checkpoints
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+
+# Pod security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\models\enums.py
+# hypothesis_version: 6.151.9
+
+[1.1, 1.6, 2.5, 3.5, 5.0, 312.0, 989.0, 2250.0, 141, 192]

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\qos\runner.py
+# hypothesis_version: 6.151.9
+
+[300, 2000, 'backend', 'fallback', 'original_error', 'qubo_generic', 'sa_fallback', 'solver_comparison', 'solver_type', 'unknown', 'w']

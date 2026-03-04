@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\solvers\sa.py
+# hypothesis_version: 6.151.9
+
+[0.1, 1.0, 5.0, 500, 1500, 'backend', 'classical', 'inf', 'num_reads', 'num_sweeps', 'numpy', 'simulated_annealing']

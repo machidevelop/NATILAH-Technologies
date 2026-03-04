@@ -1,0 +1,4 @@
+# file: C:\Users\maxim\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\scipy\_lib\array_api_extra\__init__.py
+# hypothesis_version: 6.151.9
+
+['0.9.1', '__version__', 'apply_where', 'argpartition', 'at', 'atleast_nd', 'broadcast_shapes', 'cov', 'create_diagonal', 'default_dtype', 'expand_dims', 'isclose', 'isin', 'kron', 'lazy_apply', 'nan_to_num', 'nunique', 'one_hot', 'pad', 'partition', 'setdiff1d', 'sinc']

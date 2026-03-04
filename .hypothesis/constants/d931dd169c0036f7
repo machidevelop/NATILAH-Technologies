@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\qos\report.py
+# hypothesis_version: 6.151.9
+
+['FEASIBLE', 'INFEASIBLE', 'N/A', 'QOSReport', 'backend', 'energy', 'feasible', 'input_hash', 'job_id', 'job_type', 'metadata', 'qubo_size', 'selected_count', 'solution', 'solve_time_s', 'solver_name', 'solver_type', 'timestamp', 'w']

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\qos\scheduler.py
+# hypothesis_version: 6.151.9
+
+[127, 300, 500, 1000, 1500, 3000, 4096, 'QOSScheduler', 'aer', 'backend', 'classical', 'dwave', 'instance', 'is_available', 'mock_quantum', 'n_restarts', 'num_reads', 'num_reads_heavy', 'num_sweeps', 'num_sweeps_heavy', 'optimization_level', 'p', 'qaoa', 'qaoa_sim', 'qiskit', 'qiskit_runtime', 'quantum_hw', 'quantum_sim', 'sa', 'sa_default', 'sa_heavy', 'seed', 'shots', 'solvers', 'token']

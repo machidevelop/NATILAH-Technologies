@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\stages\statistical.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1e-10, 0.3, 1.0, 3.0, 10.0, 'StatisticalStrainer', 'count', 'm2', 'mean', 'min_samples', 'statistical', 'z_threshold']

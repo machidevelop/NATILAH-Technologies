@@ -1,0 +1,48 @@
+[Unit]
+Description=Q-Strainer GPU Telemetry Filtering Engine
+Documentation=https://github.com/your-org/qstrainer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=qstrainer
+Group=qstrainer
+
+# Configuration
+Environment=QSTRAINER_CONFIG=/etc/qstrainer/config.yaml
+Environment=QSTRAINER_CHECKPOINT__DIR=/var/lib/qstrainer/checkpoints
+EnvironmentFile=-/etc/default/qstrainer
+
+# Execution
+ExecStart=/usr/local/bin/qstrainer agent --config /etc/qstrainer/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/qstrainer /var/log/qstrainer
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=no
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=qstrainer
+
+[Install]
+WantedBy=multi-user.target

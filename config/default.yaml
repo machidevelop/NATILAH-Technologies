@@ -1,0 +1,68 @@
+# Q-Strainer — Default Configuration
+# ====================================
+# Override any key via environment variables:
+#   QSTRAINER_AGENT__POLL_HZ=20
+#   QSTRAINER_PIPELINE__EMIT_THRESHOLD=0.5
+
+agent:
+  node_id: "node-00"
+  poll_hz: 10.0                          # telemetry poll rate (Hz)
+  checkpoint_interval_frames: 10000      # auto-checkpoint every N frames
+
+synthetic:
+  seed: 42
+  n_gpus: 8
+
+pipeline:
+  emit_threshold: 0.3                    # anomaly score above which to emit
+  heartbeat_interval: 200                # emit every Nth frame regardless
+
+  threshold:
+    temp_critical_c: 90.0
+    temp_warning_c: 83.0
+    ecc_dbe_limit: 0
+    memory_pressure_pct: 0.95
+    power_headroom_pct: 0.05
+
+  statistical:
+    z_threshold: 3.0
+    warmup_frames: 30
+
+  ml:
+    kernel: "rbf"
+    nu: 0.05
+
+features:
+  window_size: 10
+  n_select: 8
+  alpha: 0.5
+
+solvers:
+  sa:
+    num_reads: 300
+    num_sweeps: 1500
+    num_reads_heavy: 1000
+    num_sweeps_heavy: 3000
+  qaoa:
+    p: 2
+    n_restarts: 6
+    seed: 42
+  dwave:
+    num_reads: 500
+
+emitters:
+  prometheus:
+    enabled: false
+    port: 9090
+  grpc:
+    enabled: false
+    target: "localhost:50051"
+  kafka:
+    enabled: false
+    bootstrap_servers: "localhost:9092"
+    topic: "qstrainer-alerts"
+
+checkpoint:
+  enabled: true
+  dir: "runs/"
+  max_checkpoints: 5

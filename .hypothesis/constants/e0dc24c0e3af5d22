@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\solvers\mock.py
+# hypothesis_version: 6.151.9
+
+['mock_quantum', 'note', 'quantum_mock']

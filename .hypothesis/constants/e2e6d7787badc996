@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\stages\ml.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.05, 1.0, 'PredictiveStrainer', 'kernel', 'ml_predictor', 'model_b64', 'nu', 'rbf', 'scale', 'scaler_b64', 'selected_features']

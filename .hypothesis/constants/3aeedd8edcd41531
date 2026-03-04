@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\solvers\qaoa.py
+# hypothesis_version: 6.151.9
+
+[0.5, 1.0, 'COBYLA', 'backend', 'inf', 'ki,ij,kj->k', 'maxiter', 'n_qubits', 'n_restarts', 'numpy_statevector', 'optimal_betas', 'optimal_gammas', 'p', 'qaoa_statevector', 'quantum_sim', 'rhobeg', 'upgrade_path']

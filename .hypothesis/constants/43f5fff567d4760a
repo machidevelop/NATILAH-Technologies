@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\stages\threshold.py
+# hypothesis_version: 6.151.9
+
+[0.9, 0.95, 0.98, 1.0, 83.0, 90.0, 'ThresholdStrainer', 'critical', 'dbe_critical', 'dbe_warn', 'ecc', 'ecc_dbe', 'ecc_sbe', 'fatal_xids', 'gpu_type_overrides', 'mem_pressure', 'memory', 'power', 'power_ratio', 'sbe_warn', 'temperature', 'temperature_c', 'thresholds', 'warn']

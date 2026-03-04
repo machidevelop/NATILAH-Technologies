@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qstrainer"
+version = "0.2.0"
+description = "Q-Strainer: Real-time GPU telemetry filtering engine with quantum-ready feature selection"
+readme = "README.md"
+license = {text = "Proprietary"}
+requires-python = ">=3.10"
+authors = [{name = "QEngine Team"}]
+
+dependencies = [
+    "numpy>=1.24,<2.0",
+    "scikit-learn>=1.3,<1.6",
+    "pyyaml>=6.0,<7.0",
+    "prometheus-client>=0.20,<1.0",
+]
+
+[project.optional-dependencies]
+gpu = ["pynvml>=11.5,<12.0"]
+quantum-dwave = ["dwave-ocean-sdk>=6.0,<7.0"]
+quantum-ibm = ["qiskit>=1.0", "qiskit-machine-learning>=0.7"]
+kafka = ["confluent-kafka>=2.3,<3.0"]
+grpc = ["grpcio>=1.60,<2.0", "protobuf>=4.25,<5.0"]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.3",
+    "mypy>=1.8",
+]
+all = [
+    "qstrainer[gpu,quantum-dwave,kafka,grpc,dev]",
+]
+
+[project.scripts]
+qstrainer = "qstrainer.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: requires GPU hardware",
+    "quantum: requires quantum backend",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

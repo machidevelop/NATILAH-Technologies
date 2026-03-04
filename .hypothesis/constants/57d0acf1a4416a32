@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\secrets.py
+# hypothesis_version: 6.151.9
+
+['#', '***', '--decrypt', '--extract', 'env://', 'file://', 'get', 'kv', 'sops', 'sops://', 'vault', 'vault://']

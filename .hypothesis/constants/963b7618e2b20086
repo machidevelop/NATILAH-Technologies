@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\features\derived.py
+# hypothesis_version: 6.151.9
+
+[1e-10, 'clock×throttle', 'cv_max', 'cv_mean', 'kernel×alloc', 'mem×alloc', 'mem×power', 'nvlink_tx×rx', 'pcie_tx×rx', 'sbe×dbe', 'sm×power', 'sm×temp', 'temp×power']

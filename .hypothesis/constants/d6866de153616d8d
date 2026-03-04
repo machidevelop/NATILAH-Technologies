@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\models\alert.py
+# hypothesis_version: 6.151.9
+
+[0.0, 'action_recommended', 'alerts', 'anomaly_score', 'compression_ratio', 'confidence', 'dominant_signals', 'frames_analyzed', 'gpu_id', 'health', 'message', 'metric', 'node_id', 'severity', 'strainer_method', 'threshold', 'timestamp', 'value']

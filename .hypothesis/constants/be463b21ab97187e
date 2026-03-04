@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\quantum\feature_selector.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1e-10, 0.5, 1.0, 2.0, 200, 1000, 'QUBOFeatureSelector', 'alpha', 'n_select', 'qubo_selector']

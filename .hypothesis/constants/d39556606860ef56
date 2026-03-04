@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\quantum\qaoa_circuit.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 1.0, 2.0, 120, 1024, 'COBYLA', 'inf', 'ki,i->k', 'ki,ij,kj->k', 'maxiter', 'rhobeg']

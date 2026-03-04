@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\solvers\base.py
+# hypothesis_version: 6.151.9
+
+['energy', 'metadata', 'solution', 'solve_time_s', 'solver_name']

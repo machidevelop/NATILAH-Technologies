@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\features\derived.py
+# hypothesis_version: 6.151.9
+
+[1e-10, 'batch×cost', 'conv×update', 'cost×time', 'cv_max', 'cv_mean', 'delta×conv', 'delta×grad', 'flops×thru', 'grad×lr', 'grad×var', 'loss_trend', 'loss×conv', 'loss×delta', 'loss×grad', 'sim×cost']

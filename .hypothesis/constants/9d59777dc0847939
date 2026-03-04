@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\models\frame.py
+# hypothesis_version: 6.151.9
+
+[0.0, 8.0, 100.0, 1000.0, 2500.0, 10000.0, 1000000000.0, 100, 'alloc_rate_norm', 'clock_norm', 'ecc_dbe_amp', 'ecc_sbe', 'kernel_rate_norm', 'mem_pressure', 'mem_util', 'nvlink_rx_gb', 'nvlink_tx_gb', 'pcie_rx_gb', 'pcie_tx_gb', 'power_ratio', 'proc_count_norm', 'sm_util', 'temp_norm', 'throttled', 'xid_count']

@@ -1,0 +1,4 @@
+# file: M:\QuantumEngine\QEngine\src\qstrainer\config.py
+# hypothesis_version: 6.151.9
+
+[1e-09, 1e-08, 1e-07, 1e-05, 0.05, 0.5, 0.85, 0.9, 0.95, 0.98, 3.0, 10.0, 200, 300, 500, 1000, 1500, 3000, 9090, 10000, '0', '1', 'QSTRAINER_', '__', 'agent', 'alpha', 'bootstrap_servers', 'checkpoint', 'convergence', 'data', 'dir', 'dwave', 'emitters', 'enabled', 'false', 'features', 'floor', 'gradient', 'grpc', 'heartbeat_interval', 'kafka', 'kernel', 'localhost:50051', 'localhost:9092', 'loss', 'low', 'max_checkpoints', 'min_samples', 'ml_predictor', 'n_gpus', 'n_restarts', 'n_select', 'no', 'node-00', 'node_id', 'nu', 'num_reads', 'num_reads_heavy', 'num_sweeps', 'num_sweeps_heavy', 'p', 'param_update_floor', 'pipeline', 'poll_hz', 'port', 'prometheus', 'qaoa', 'qstrainer-alerts', 'rbf', 'redundancy', 'runs/', 'sa', 'seed', 'solvers', 'strain_threshold', 'synthetic', 'target', 'threshold', 'topic', 'true', 'warn', 'window_size', 'yes', 'z_threshold']
