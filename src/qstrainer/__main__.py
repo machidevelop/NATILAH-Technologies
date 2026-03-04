@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import logging
 import signal
-import sys
 from pathlib import Path
 
 from qstrainer import __version__
@@ -24,19 +23,25 @@ def main() -> None:
     # --- agent ---
     p_agent = sub.add_parser("agent", help="Run the Q-Strainer telemetry agent")
     p_agent.add_argument(
-        "-c", "--config", type=Path, default=Path("config/default.yaml"),
+        "-c",
+        "--config",
+        type=Path,
+        default=Path("config/default.yaml"),
         help="Path to YAML config file",
     )
     p_agent.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Use synthetic telemetry instead of NVML",
     )
     p_agent.add_argument(
-        "--log-level", default="INFO",
+        "--log-level",
+        default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     p_agent.add_argument(
-        "--json-logs", action="store_true",
+        "--json-logs",
+        action="store_true",
         help="Output structured JSON log lines (for log aggregation)",
     )
 
@@ -45,14 +50,20 @@ def main() -> None:
     p_bench.add_argument("-n", "--num-gpus", type=int, default=100)
     p_bench.add_argument("-f", "--frames-per-gpu", type=int, default=100)
     p_bench.add_argument(
-        "-c", "--config", type=Path, default=Path("config/default.yaml"),
+        "-c",
+        "--config",
+        type=Path,
+        default=Path("config/default.yaml"),
     )
 
     # --- compare-solvers ---
     p_compare = sub.add_parser("compare-solvers", help="Compare QUBO solvers")
     p_compare.add_argument("-n", "--n-features", type=int, default=17)
     p_compare.add_argument(
-        "-c", "--config", type=Path, default=Path("config/default.yaml"),
+        "-c",
+        "--config",
+        type=Path,
+        default=Path("config/default.yaml"),
     )
 
     # --- checkpoint ---
@@ -80,8 +91,8 @@ def main() -> None:
 
 
 def _run_agent(args: argparse.Namespace, logger: logging.Logger) -> None:
-    from qstrainer.config import load_config
     from qstrainer.agent.daemon import QStrainerDaemon
+    from qstrainer.config import load_config
 
     cfg = load_config(args.config)
     daemon = QStrainerDaemon(cfg, dry_run=args.dry_run)
@@ -108,20 +119,20 @@ def _run_agent(args: argparse.Namespace, logger: logging.Logger) -> None:
 
 
 def _run_benchmark(args: argparse.Namespace, logger: logging.Logger) -> None:
-    from qstrainer.config import load_config
     from qstrainer.benchmarks import run_fleet_benchmark
+    from qstrainer.config import load_config
 
     cfg = load_config(args.config)
     run_fleet_benchmark(
         n_gpus=args.num_gpus,
-        frames_per_gpu=args.frames_per_gpu,
+        tasks_per_gpu=args.frames_per_gpu,
         cfg=cfg,
     )
 
 
 def _run_compare_solvers(args: argparse.Namespace, logger: logging.Logger) -> None:
-    from qstrainer.config import load_config
     from qstrainer.benchmarks import run_solver_comparison
+    from qstrainer.config import load_config
 
     cfg = load_config(args.config)
     run_solver_comparison(n_features=args.n_features, cfg=cfg)

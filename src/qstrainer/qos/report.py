@@ -9,8 +9,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -30,21 +29,21 @@ class QOSReport:
     backend: str  # "numpy", "dwave_advantage", "ibm_eagle", etc.
 
     # Results
-    solution: Optional[np.ndarray]
-    energy: Optional[float]
+    solution: np.ndarray | None
+    energy: float | None
     solve_time_s: float
 
     # Quality metrics
     qubo_size: int
     feasible: bool  # does solution satisfy constraints?
-    selected_count: Optional[int]  # for feature selection
+    selected_count: int | None  # for feature selection
 
     # Reproducibility
     input_hash: str  # SHA-256 prefix of QUBO matrix
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # ── Serialisation ───────────────────────────────────────
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         if d["solution"] is not None:
             d["solution"] = list(map(int, d["solution"]))
@@ -70,7 +69,7 @@ class QOSReport:
         )
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "QOSReport":
+    def from_dict(cls, d: dict[str, Any]) -> QOSReport:
         """Reconstruct from a dict (e.g. loaded from JSON)."""
         sol = d.get("solution")
         if sol is not None:

@@ -4,22 +4,20 @@ Tests invariants that must hold for ANY valid compute task data,
 not just hand-picked examples.
 """
 
-import pytest
 import numpy as np
-from hypothesis import given, settings, assume, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES, FEATURE_NAMES
 from qstrainer.models.buffer import WorkloadBuffer
-from qstrainer.models.enums import TaskVerdict, StrainAction, ComputePhase, JobType
-from qstrainer.stages.threshold import RedundancyStrainer
-from qstrainer.stages.statistical import ConvergenceStrainer
+from qstrainer.models.enums import TaskVerdict
+from qstrainer.models.frame import FEATURE_NAMES, N_BASE_FEATURES, ComputeTask
 from qstrainer.pipeline.strainer import QStrainer
-
+from qstrainer.stages.threshold import RedundancyStrainer
 
 # ── Strategies (data generators for Hypothesis) ─────────────
 
 _step_counter = 0
+
 
 @st.composite
 def compute_tasks(draw):
@@ -47,11 +45,14 @@ def compute_tasks(draw):
         param_update_magnitude=draw(st.floats(min_value=0.0, max_value=10.0, allow_nan=False)),
         data_similarity=draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False)),
         flop_utilization=draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False)),
-        throughput_samples_per_sec=draw(st.floats(min_value=0.0, max_value=100000.0, allow_nan=False)),
+        throughput_samples_per_sec=draw(
+            st.floats(min_value=0.0, max_value=100000.0, allow_nan=False)
+        ),
     )
 
 
 # ── Task Invariants ────────────────────────────────────────
+
 
 class TestTaskProperties:
     """Properties that must hold for any ComputeTask."""
@@ -85,6 +86,7 @@ class TestTaskProperties:
 
 # ── Buffer Invariants ───────────────────────────────────────
 
+
 class TestBufferProperties:
     """Properties that must hold for WorkloadBuffer under any input."""
 
@@ -97,14 +99,16 @@ class TestBufferProperties:
         """Buffer must never store more than max_tasks_per_gpu tasks."""
         buf = WorkloadBuffer(max_tasks_per_gpu=capacity)
         gen_rng = np.random.default_rng(42)
-        step = 0
 
-        for _ in range(n_tasks):
-            step += 1
+        for step, _ in enumerate(range(n_tasks), start=1):
             task = ComputeTask(
-                timestamp=1e9, task_id=f"task-{step}", gpu_id="GPU-0",
-                job_id="job-0", step_number=step,
-                loss=gen_rng.random(), loss_delta=-gen_rng.random() * 0.01,
+                timestamp=1e9,
+                task_id=f"task-{step}",
+                gpu_id="GPU-0",
+                job_id="job-0",
+                step_number=step,
+                loss=gen_rng.random(),
+                loss_delta=-gen_rng.random() * 0.01,
                 gradient_norm=gen_rng.random(),
             )
             buf.push(task)
@@ -123,9 +127,14 @@ class TestBufferProperties:
 
         for i in range(n_tasks):
             task = ComputeTask(
-                timestamp=float(i), task_id=f"task-{i}", gpu_id="GPU-0",
-                job_id="job-0", step_number=i,
-                loss=0.5, loss_delta=-0.01, gradient_norm=0.1,
+                timestamp=float(i),
+                task_id=f"task-{i}",
+                gpu_id="GPU-0",
+                job_id="job-0",
+                step_number=i,
+                loss=0.5,
+                loss_delta=-0.01,
+                gradient_norm=0.1,
             )
             buf.push(task)
 
@@ -145,6 +154,7 @@ class TestBufferProperties:
 
 
 # ── Redundancy Strainer Invariants ──────────────────────────
+
 
 class TestRedundancyProperties:
     """Properties of the redundancy stage."""
@@ -167,6 +177,7 @@ class TestRedundancyProperties:
 
 
 # ── Pipeline Invariants ─────────────────────────────────────
+
 
 class TestPipelineProperties:
     """Properties of the full QStrainer pipeline."""
@@ -200,4 +211,3 @@ class TestPipelineProperties:
         stats = pipeline.stats
         assert stats["tasks_processed"] == 1
         assert stats["tasks_executed"] + stats["tasks_strained"] == 1
-

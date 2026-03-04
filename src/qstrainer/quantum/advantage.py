@@ -21,13 +21,12 @@ Usage::
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
-from qstrainer.solvers.base import QUBOResult, QUBOSolverBase
+from qstrainer.solvers.base import QUBOSolverBase
 
 logger = logging.getLogger(__name__)
 
@@ -35,21 +34,23 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class TrialResult:
     """Results from one (solver, problem_size) trial."""
+
     solver_name: str
     problem_size: int
     energy: float
     solve_time_s: float
     solution: np.ndarray
     trial_index: int
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class SizeReport:
     """Aggregated results for one problem size across all solvers."""
+
     problem_size: int
     best_known_energy: float
-    solver_results: Dict[str, List[TrialResult]]
+    solver_results: dict[str, list[TrialResult]]
 
     def gap(self, solver_name: str) -> float:
         """Mean energy gap to best-known (lower = better)."""
@@ -70,8 +71,9 @@ class SizeReport:
 @dataclass
 class BenchmarkReport:
     """Full benchmark report across all problem sizes."""
-    size_reports: List[SizeReport] = field(default_factory=list)
-    solvers: List[str] = field(default_factory=list)
+
+    size_reports: list[SizeReport] = field(default_factory=list)
+    solvers: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
         """Human-readable summary table."""
@@ -104,7 +106,7 @@ class BenchmarkReport:
 
         return "\n".join(lines)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serialisable representation."""
         return {
             "solvers": self.solvers,
@@ -113,10 +115,7 @@ class BenchmarkReport:
                     "n": sr.problem_size,
                     "best_energy": sr.best_known_energy,
                     "results": {
-                        name: [
-                            {"energy": t.energy, "time": t.solve_time_s}
-                            for t in trials
-                        ]
+                        name: [{"energy": t.energy, "time": t.solve_time_s} for t in trials]
                         for name, trials in sr.solver_results.items()
                     },
                 }
@@ -139,7 +138,7 @@ class QuantumAdvantageBenchmark:
     def __init__(self, n_trials: int = 5, seed: int = 42) -> None:
         self._n_trials = n_trials
         self._rng = np.random.default_rng(seed)
-        self._solvers: Dict[str, QUBOSolverBase] = {}
+        self._solvers: dict[str, QUBOSolverBase] = {}
 
     def register_solver(self, name: str, solver: QUBOSolverBase) -> None:
         """Add a solver to the benchmark."""
@@ -175,7 +174,7 @@ class QuantumAdvantageBenchmark:
 
     def run(
         self,
-        problem_sizes: Optional[List[int]] = None,
+        problem_sizes: list[int] | None = None,
     ) -> BenchmarkReport:
         """Run the full benchmark suite.
 
@@ -191,9 +190,7 @@ class QuantumAdvantageBenchmark:
 
         for n in problem_sizes:
             logger.info("Benchmarking n=%d (%d trials)", n, self._n_trials)
-            solver_results: Dict[str, List[TrialResult]] = {
-                name: [] for name in self._solvers
-            }
+            solver_results: dict[str, list[TrialResult]] = {name: [] for name in self._solvers}
             best_known = float("inf")
 
             for trial in range(self._n_trials):
@@ -221,19 +218,29 @@ class QuantumAdvantageBenchmark:
                     except Exception as e:
                         logger.warning(
                             "Solver %s failed on n=%d trial=%d: %s",
-                            name, n, trial, e,
+                            name,
+                            n,
+                            trial,
+                            e,
                         )
 
-            report.size_reports.append(SizeReport(
-                problem_size=n,
-                best_known_energy=best_known,
-                solver_results=solver_results,
-            ))
+            report.size_reports.append(
+                SizeReport(
+                    problem_size=n,
+                    best_known_energy=best_known,
+                    solver_results=solver_results,
+                )
+            )
 
         return report
 
     @classmethod
-    def from_scheduler(cls, scheduler, n_trials: int = 5, seed: int = 42) -> "QuantumAdvantageBenchmark":
+    def from_scheduler(
+        cls,
+        scheduler: Any,
+        n_trials: int = 5,
+        seed: int = 42,
+    ) -> QuantumAdvantageBenchmark:
         """Build from a QOSScheduler, inheriting all registered solvers."""
         bench = cls(n_trials=n_trials, seed=seed)
         for name in scheduler.available_solvers():

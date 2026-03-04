@@ -12,11 +12,10 @@ This is the cheapest filter — catches the easy wins first.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
 
-from qstrainer.models.enums import TaskVerdict, StrainAction
-from qstrainer.models.frame import ComputeTask
 from qstrainer.models.alert import StrainDecision
+from qstrainer.models.enums import StrainAction, TaskVerdict
+from qstrainer.models.frame import ComputeTask
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class RedundancyStrainer:
         self.param_update_floor = param_update_floor
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "RedundancyStrainer":
+    def from_config(cls, cfg: dict) -> RedundancyStrainer:
         rc = cfg.get("redundancy", {})
         grad = rc.get("gradient", {})
         loss = rc.get("loss", {})
@@ -65,13 +64,13 @@ class RedundancyStrainer:
             param_update_floor=rc.get("param_update_floor", 1e-9),
         )
 
-    def check(self, task: ComputeTask) -> List[StrainDecision]:
+    def check(self, task: ComputeTask) -> list[StrainDecision]:
         """Check a compute task for obvious redundancy.
 
         Returns a list of StrainDecisions. Empty list = no redundancy found.
         Multiple decisions possible (e.g., both gradient AND loss converged).
         """
-        decisions: List[StrainDecision] = []
+        decisions: list[StrainDecision] = []
         ts = task.timestamp
         gid = task.gpu_id
         jid = task.job_id
@@ -79,111 +78,170 @@ class RedundancyStrainer:
 
         # ── Gradient norm check: is the gradient too small to matter? ──
         if task.gradient_norm <= self.gradient_norm_floor:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.SKIP,
-                action=StrainAction.ELIMINATE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Gradient norm {task.gradient_norm:.2e} below floor — step does nothing",
-                metric="gradient_norm", value=task.gradient_norm,
-                threshold=self.gradient_norm_floor, timestamp=ts,
-                compute_saved_flops=task.estimated_flops,
-                time_saved_s=task.estimated_time_s,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.SKIP,
+                    action=StrainAction.ELIMINATE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=(
+                        f"Gradient norm {task.gradient_norm:.2e} below floor — step does nothing"
+                    ),
+                    metric="gradient_norm",
+                    value=task.gradient_norm,
+                    threshold=self.gradient_norm_floor,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops,
+                    time_saved_s=task.estimated_time_s,
+                )
+            )
         elif task.gradient_norm <= self.gradient_norm_low:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.APPROXIMATE,
-                action=StrainAction.REDUCE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Gradient norm {task.gradient_norm:.2e} very low — use cheaper approximation",
-                metric="gradient_norm", value=task.gradient_norm,
-                threshold=self.gradient_norm_low, timestamp=ts,
-                compute_saved_flops=task.estimated_flops * 0.5,
-                time_saved_s=task.estimated_time_s * 0.5,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.APPROXIMATE,
+                    action=StrainAction.REDUCE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=(
+                        f"Gradient norm {task.gradient_norm:.2e} very low"
+                        " — use cheaper approximation"
+                    ),
+                    metric="gradient_norm",
+                    value=task.gradient_norm,
+                    threshold=self.gradient_norm_low,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops * 0.5,
+                    time_saved_s=task.estimated_time_s * 0.5,
+                )
+            )
 
         # ── Loss delta check: has loss stopped changing? ──
         if abs(task.loss_delta) <= self.loss_delta_floor:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.SKIP,
-                action=StrainAction.ELIMINATE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Loss delta {task.loss_delta:.2e} — loss plateau, compute is wasted",
-                metric="loss_delta", value=abs(task.loss_delta),
-                threshold=self.loss_delta_floor, timestamp=ts,
-                compute_saved_flops=task.estimated_flops,
-                time_saved_s=task.estimated_time_s,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.SKIP,
+                    action=StrainAction.ELIMINATE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Loss delta {task.loss_delta:.2e} — loss plateau, compute is wasted",
+                    metric="loss_delta",
+                    value=abs(task.loss_delta),
+                    threshold=self.loss_delta_floor,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops,
+                    time_saved_s=task.estimated_time_s,
+                )
+            )
         elif abs(task.loss_delta) <= self.loss_delta_low:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.APPROXIMATE,
-                action=StrainAction.REDUCE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Loss delta {task.loss_delta:.2e} — diminishing returns",
-                metric="loss_delta", value=abs(task.loss_delta),
-                threshold=self.loss_delta_low, timestamp=ts,
-                compute_saved_flops=task.estimated_flops * 0.3,
-                time_saved_s=task.estimated_time_s * 0.3,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.APPROXIMATE,
+                    action=StrainAction.REDUCE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Loss delta {task.loss_delta:.2e} — diminishing returns",
+                    metric="loss_delta",
+                    value=abs(task.loss_delta),
+                    threshold=self.loss_delta_low,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops * 0.3,
+                    time_saved_s=task.estimated_time_s * 0.3,
+                )
+            )
 
         # ── Convergence score check: has the model converged? ──
         if task.convergence_score >= self.convergence_threshold:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.SKIP,
-                action=StrainAction.ELIMINATE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Convergence score {task.convergence_score:.3f} — model is converged",
-                metric="convergence_score", value=task.convergence_score,
-                threshold=self.convergence_threshold, timestamp=ts,
-                compute_saved_flops=task.estimated_flops,
-                time_saved_s=task.estimated_time_s,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.SKIP,
+                    action=StrainAction.ELIMINATE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Convergence score {task.convergence_score:.3f} — model is converged",
+                    metric="convergence_score",
+                    value=task.convergence_score,
+                    threshold=self.convergence_threshold,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops,
+                    time_saved_s=task.estimated_time_s,
+                )
+            )
         elif task.convergence_score >= self.convergence_warn:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.APPROXIMATE,
-                action=StrainAction.OPTIMISE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Convergence score {task.convergence_score:.3f} — nearly converged",
-                metric="convergence_score", value=task.convergence_score,
-                threshold=self.convergence_warn, timestamp=ts,
-                compute_saved_flops=task.estimated_flops * 0.3,
-                time_saved_s=task.estimated_time_s * 0.3,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.APPROXIMATE,
+                    action=StrainAction.OPTIMISE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Convergence score {task.convergence_score:.3f} — nearly converged",
+                    metric="convergence_score",
+                    value=task.convergence_score,
+                    threshold=self.convergence_warn,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops * 0.3,
+                    time_saved_s=task.estimated_time_s * 0.3,
+                )
+            )
 
         # ── Data similarity check: is this batch near-duplicate? ──
         if task.data_similarity >= self.data_similarity_threshold:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.SKIP,
-                action=StrainAction.ELIMINATE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Data similarity {task.data_similarity:.3f} — near-duplicate batch",
-                metric="data_similarity", value=task.data_similarity,
-                threshold=self.data_similarity_threshold, timestamp=ts,
-                compute_saved_flops=task.estimated_flops,
-                time_saved_s=task.estimated_time_s,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.SKIP,
+                    action=StrainAction.ELIMINATE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Data similarity {task.data_similarity:.3f} — near-duplicate batch",
+                    metric="data_similarity",
+                    value=task.data_similarity,
+                    threshold=self.data_similarity_threshold,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops,
+                    time_saved_s=task.estimated_time_s,
+                )
+            )
         elif task.data_similarity >= self.data_similarity_warn:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.DEFER,
-                action=StrainAction.OPTIMISE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Data similarity {task.data_similarity:.3f} — consider deferring",
-                metric="data_similarity", value=task.data_similarity,
-                threshold=self.data_similarity_warn, timestamp=ts,
-                compute_saved_flops=task.estimated_flops * 0.2,
-                time_saved_s=task.estimated_time_s * 0.2,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.DEFER,
+                    action=StrainAction.OPTIMISE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Data similarity {task.data_similarity:.3f} — consider deferring",
+                    metric="data_similarity",
+                    value=task.data_similarity,
+                    threshold=self.data_similarity_warn,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops * 0.2,
+                    time_saved_s=task.estimated_time_s * 0.2,
+                )
+            )
 
         # ── Parameter update magnitude: is the update below noise? ──
         if task.param_update_magnitude <= self.param_update_floor:
-            decisions.append(StrainDecision(
-                verdict=TaskVerdict.SKIP,
-                action=StrainAction.ELIMINATE,
-                gpu_id=gid, job_id=jid, task_id=tid,
-                reason=f"Param update {task.param_update_magnitude:.2e} below noise floor",
-                metric="param_update_magnitude", value=task.param_update_magnitude,
-                threshold=self.param_update_floor, timestamp=ts,
-                compute_saved_flops=task.estimated_flops,
-                time_saved_s=task.estimated_time_s,
-            ))
+            decisions.append(
+                StrainDecision(
+                    verdict=TaskVerdict.SKIP,
+                    action=StrainAction.ELIMINATE,
+                    gpu_id=gid,
+                    job_id=jid,
+                    task_id=tid,
+                    reason=f"Param update {task.param_update_magnitude:.2e} below noise floor",
+                    metric="param_update_magnitude",
+                    value=task.param_update_magnitude,
+                    threshold=self.param_update_floor,
+                    timestamp=ts,
+                    compute_saved_flops=task.estimated_flops,
+                    time_saved_s=task.estimated_time_s,
+                )
+            )
 
         return decisions

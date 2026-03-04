@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, Optional
+from collections.abc import Generator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +27,12 @@ _NOOP = True
 
 try:
     from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         BatchSpanProcessor,
         ConsoleSpanExporter,
     )
-    from opentelemetry.sdk.resources import Resource
 
     _HAS_OTEL = True
 except ImportError:
@@ -40,7 +41,7 @@ except ImportError:
 
 def init_tracing(
     service_name: str = "qstrainer",
-    endpoint: Optional[str] = None,
+    endpoint: str | None = None,
     console: bool = False,
 ) -> None:
     """Initialize OpenTelemetry tracing.
@@ -75,8 +76,7 @@ def init_tracing(
             logger.info("OTLP trace exporter → %s", endpoint)
         except ImportError:
             logger.warning(
-                "opentelemetry-exporter-otlp not installed — "
-                "falling back to console exporter"
+                "opentelemetry-exporter-otlp not installed — falling back to console exporter"
             )
             if console:
                 provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
@@ -93,9 +93,9 @@ def init_tracing(
 @contextmanager
 def trace_stage(
     name: str,
-    attributes: Optional[Dict[str, Any]] = None,
-    **extra_attrs,
-):
+    attributes: dict[str, Any] | None = None,
+    **extra_attrs: Any,
+) -> Generator[Any, None, None]:
     """Context manager to trace a pipeline stage.
 
     Usage::
@@ -118,7 +118,7 @@ def trace_stage(
         yield span
 
 
-def add_span_event(name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+def add_span_event(name: str, attributes: dict[str, Any] | None = None) -> None:
     """Add an event to the current span (if tracing is active)."""
     if _NOOP:
         return

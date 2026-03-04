@@ -14,14 +14,13 @@ The graph is the input to the quantum advantage pipeline:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
 
 import numpy as np
 
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
-
+from qstrainer.models.frame import N_BASE_FEATURES, ComputeTask
 
 # ── Edge ─────────────────────────────────────────────────────
+
 
 @dataclass(slots=True)
 class Edge:
@@ -34,6 +33,7 @@ class Edge:
 
 
 # ── ConflictGraph ────────────────────────────────────────────
+
 
 class ConflictGraph:
     """Undirected weighted conflict graph over GPU compute tasks.
@@ -48,21 +48,21 @@ class ConflictGraph:
     def __init__(self, n_nodes: int) -> None:
         self.n = n_nodes
         self._adj = np.zeros((n_nodes, n_nodes), dtype=np.float64)
-        self._edges: List[Edge] = []
-        self._node_labels: List[str] = [""] * n_nodes
+        self._edges: list[Edge] = []
+        self._node_labels: list[str] = [""] * n_nodes
 
     # ── Factory ──────────────────────────────────────────────
 
     @classmethod
     def from_tasks(
         cls,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         *,
         gpu_weight: float = 0.6,
         data_weight: float = 0.25,
         memory_weight: float = 0.15,
         conflict_threshold: float = 0.10,
-    ) -> "ConflictGraph":
+    ) -> ConflictGraph:
         """Build a conflict graph from a batch of compute tasks.
 
         Parameters
@@ -113,9 +113,7 @@ class ConflictGraph:
 
     # ── Mutation ─────────────────────────────────────────────
 
-    def add_edge(
-        self, i: int, j: int, weight: float, conflict_type: str = "mixed"
-    ) -> None:
+    def add_edge(self, i: int, j: int, weight: float, conflict_type: str = "mixed") -> None:
         """Add or update an edge."""
         self._adj[i, j] = weight
         self._adj[j, i] = weight
@@ -132,22 +130,22 @@ class ConflictGraph:
         return len(self._edges)
 
     @property
-    def edges(self) -> List[Edge]:
+    def edges(self) -> list[Edge]:
         return list(self._edges)
 
     @property
     def adjacency_matrix(self) -> np.ndarray:
-        return self._adj.copy()
+        return np.array(self._adj)
 
     @property
-    def node_labels(self) -> List[str]:
+    def node_labels(self) -> list[str]:
         return list(self._node_labels)
 
-    def edge_list(self) -> List[Tuple[int, int, float]]:
+    def edge_list(self) -> list[tuple[int, int, float]]:
         """List of ``(i, j, weight)`` tuples."""
         return [(e.i, e.j, e.weight) for e in self._edges]
 
-    def neighbors(self, node: int) -> List[int]:
+    def neighbors(self, node: int) -> list[int]:
         """Indices of neighbors (non‐zero adjacency)."""
         return [j for j in range(self.n) if self._adj[node, j] > 0]
 
@@ -181,15 +179,15 @@ class ConflictGraph:
 
         for e in self._edges:
             w = e.weight
-            Q[e.i, e.j] += 2.0 * w   # quadratic
-            Q[e.i, e.i] -= w          # linear
-            Q[e.j, e.j] -= w          # linear
+            Q[e.i, e.j] += 2.0 * w  # quadratic
+            Q[e.i, e.i] -= w  # linear
+            Q[e.j, e.j] -= w  # linear
 
         return Q
 
     # ── Graph surgery ────────────────────────────────────────
 
-    def remove_edges(self, drop_mask: np.ndarray) -> "ConflictGraph":
+    def remove_edges(self, drop_mask: np.ndarray) -> ConflictGraph:
         """Return a **new** graph with edges removed where *drop_mask* is True.
 
         Parameters
@@ -206,7 +204,7 @@ class ConflictGraph:
 
         return purified
 
-    def subgraph(self, node_mask: np.ndarray) -> "ConflictGraph":
+    def subgraph(self, node_mask: np.ndarray) -> ConflictGraph:
         """Induced subgraph on nodes where *node_mask* is True."""
         indices = np.where(node_mask)[0]
         sub = ConflictGraph(len(indices))
@@ -221,6 +219,7 @@ class ConflictGraph:
 
 
 # ── Helpers ──────────────────────────────────────────────────
+
 
 def _dominant(gpu: float, data: float, memory: float) -> str:
     vals = {"gpu_contention": gpu, "data_overlap": data, "memory_pressure": memory}

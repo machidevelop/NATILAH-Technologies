@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict
 
 import numpy as np
 
@@ -17,9 +16,9 @@ class QUBOResult:
     energy: float
     solver_name: str
     solve_time_s: float
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "solution": self.solution.tolist(),
             "energy": self.energy,

@@ -13,22 +13,22 @@ Validates:
 from __future__ import annotations
 
 import time
-import numpy as np
-import pytest
 
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
-from qstrainer.models.enums import TaskVerdict, ComputePhase, JobType
+import numpy as np
+
+from qstrainer.models.enums import ComputePhase, JobType, TaskVerdict
+from qstrainer.models.frame import ComputeTask
 from qstrainer.pipeline.quantum_scheduler import (
     QuantumStrainScheduler,
     QUBOBuilder,
     SchedulerConfig,
 )
-from qstrainer.solvers.sa import SimulatedAnnealingSolver
-from qstrainer.solvers.mock import MockQuantumSolver
 from qstrainer.qos.scheduler import QOSScheduler
-
+from qstrainer.solvers.mock import MockQuantumSolver
+from qstrainer.solvers.sa import SimulatedAnnealingSolver
 
 # ── Helpers ──────────────────────────────────────────────────
+
 
 def _productive_task(gpu_id: str = "GPU-0", step: int = 10, job_id: str = "job-A") -> ComputeTask:
     return ComputeTask(
@@ -88,8 +88,8 @@ def _redundant_task(gpu_id: str = "GPU-0", step: int = 999, job_id: str = "job-A
 
 # ── QUBO Builder Tests ──────────────────────────────────────
 
-class TestQUBOBuilder:
 
+class TestQUBOBuilder:
     def test_qubo_matrix_shape(self):
         """QUBO matrix is N×N for N tasks."""
         cfg = SchedulerConfig()
@@ -115,7 +115,7 @@ class TestQUBOBuilder:
 
         # Productive should have more negative diagonal (solver prefers x=1=execute)
         assert Q[0, 0] < Q[1, 1], (
-            f"Productive diagonal {Q[0,0]:.3f} should be < redundant {Q[1,1]:.3f}"
+            f"Productive diagonal {Q[0, 0]:.3f} should be < redundant {Q[1, 1]:.3f}"
         )
 
     def test_similarity_coupling_same_gpu(self):
@@ -132,7 +132,7 @@ class TestQUBOBuilder:
         decs = [[], []]
         Q = builder.build(tasks, scores, vecs, decs)
 
-        assert Q[0, 1] > 0, f"Similar same-GPU tasks should have positive coupling: {Q[0,1]:.3f}"
+        assert Q[0, 1] > 0, f"Similar same-GPU tasks should have positive coupling: {Q[0, 1]:.3f}"
 
     def test_similarity_not_coupled_across_gpus(self):
         """Similar tasks on different GPUs should NOT have similarity coupling."""
@@ -165,7 +165,7 @@ class TestQUBOBuilder:
         decs = [[], []]
         Q = builder.build(tasks, scores, vecs, decs)
 
-        assert Q[0, 1] < 0, f"Consecutive steps should have negative coupling: {Q[0,1]:.3f}"
+        assert Q[0, 1] < 0, f"Consecutive steps should have negative coupling: {Q[0, 1]:.3f}"
 
     def test_fairness_coupling_cross_gpu(self):
         """Tasks on different GPUs in same job should have negative coupling."""
@@ -181,19 +181,19 @@ class TestQUBOBuilder:
         decs = [[], []]
         Q = builder.build(tasks, scores, vecs, decs)
 
-        assert Q[0, 1] < 0, f"Cross-GPU same-job should have negative coupling: {Q[0,1]:.3f}"
+        assert Q[0, 1] < 0, f"Cross-GPU same-job should have negative coupling: {Q[0, 1]:.3f}"
 
 
 # ── Scheduler End-to-End Tests ───────────────────────────────
 
-class TestQuantumStrainScheduler:
 
+class TestQuantumStrainScheduler:
     def _make_scheduler(self, **kwargs) -> QuantumStrainScheduler:
         """Build a scheduler with fast SA solver for testing."""
         qos = QOSScheduler()
-        qos.register_solver("sa_fast", SimulatedAnnealingSolver(
-            num_reads=50, num_sweeps=200, seed=42
-        ), priority=10)
+        qos.register_solver(
+            "sa_fast", SimulatedAnnealingSolver(num_reads=50, num_sweeps=200, seed=42), priority=10
+        )
         cfg = SchedulerConfig(**kwargs)
         return QuantumStrainScheduler(qos_scheduler=qos, config=cfg)
 
@@ -224,10 +224,10 @@ class TestQuantumStrainScheduler:
         tasks = []
         # 8 productive tasks
         for i in range(8):
-            tasks.append(_productive_task(gpu_id=f"GPU-{i%4}", step=i))
+            tasks.append(_productive_task(gpu_id=f"GPU-{i % 4}", step=i))
         # 4 redundant tasks
         for i in range(4):
-            tasks.append(_redundant_task(gpu_id=f"GPU-{i%4}", step=900+i))
+            tasks.append(_redundant_task(gpu_id=f"GPU-{i % 4}", step=900 + i))
 
         results = sched.schedule(tasks)
         assert len(results) == 12
@@ -298,9 +298,9 @@ class TestQuantumStrainScheduler:
         sched = self._make_scheduler()
         tasks = []
         for i in range(24):
-            tasks.append(_productive_task(gpu_id=f"GPU-{i%4}", step=i))
+            tasks.append(_productive_task(gpu_id=f"GPU-{i % 4}", step=i))
         for i in range(8):
-            tasks.append(_redundant_task(gpu_id=f"GPU-{i%4}", step=800+i))
+            tasks.append(_redundant_task(gpu_id=f"GPU-{i % 4}", step=800 + i))
 
         results = sched.schedule(tasks)
         assert len(results) == 32
@@ -326,7 +326,7 @@ class TestQuantumStrainScheduler:
 
     def test_strain_rate_safety(self):
         """Scheduler should respect safety limits on borderline tasks.
-        
+
         Hard SKIPs (gradient=0, converged) correctly override the cap.
         The safety cap matters for borderline tasks where the QUBO solver
         decides based on interactions.
@@ -335,7 +335,7 @@ class TestQuantumStrainScheduler:
         # Borderline tasks: not clearly redundant, not clearly productive
         tasks = []
         for i in range(8):
-            t = _productive_task(step=i, gpu_id=f"GPU-{i%2}")
+            t = _productive_task(step=i, gpu_id=f"GPU-{i % 2}")
             # Make borderline: moderate gradient, moderate convergence
             t.gradient_norm = 0.1
             t.convergence_score = 0.4
@@ -349,6 +349,7 @@ class TestQuantumStrainScheduler:
 
 
 # ── QUBO Properties ─────────────────────────────────────────
+
 
 class TestQUBOProperties:
     """Property tests for QUBO matrix correctness."""

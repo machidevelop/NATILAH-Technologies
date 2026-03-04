@@ -16,22 +16,19 @@ Pipeline position:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.optimize import minimize as scipy_minimize
 
-from qstrainer.quantum.ising import binary_to_spin, ising_energy
-
-
 # ── Result container ─────────────────────────────────────────
+
 
 @dataclass(slots=True)
 class SampleResult:
     """One sampled bitstring together with its probability."""
 
-    bitstring: np.ndarray   # binary {0,1}^n
+    bitstring: np.ndarray  # binary {0,1}^n
     probability: float
     ising_energy: float
 
@@ -40,7 +37,7 @@ class SampleResult:
 class SamplerOutput:
     """Complete output from :meth:`QAOASampler.sample`."""
 
-    samples: List[SampleResult]
+    samples: list[SampleResult]
     optimal_energy: float
     optimal_params: np.ndarray
     optimize_time_s: float
@@ -54,6 +51,7 @@ class SamplerOutput:
 
 
 # ── QAOASampler ──────────────────────────────────────────────
+
 
 class QAOASampler:
     """QAOA circuit (statevector) with multi-bitstring sampling.
@@ -100,11 +98,11 @@ class QAOASampler:
 
         # Set by build_and_optimise
         self._n: int = 0
-        self._h: Optional[np.ndarray] = None
-        self._J: Optional[np.ndarray] = None
-        self._costs: Optional[np.ndarray] = None      # cost per basis state
-        self._optimal_params: Optional[np.ndarray] = None
-        self._optimal_state: Optional[np.ndarray] = None
+        self._h: np.ndarray | None = None
+        self._J: np.ndarray | None = None
+        self._costs: np.ndarray | None = None  # cost per basis state
+        self._optimal_params: np.ndarray | None = None
+        self._optimal_state: np.ndarray | None = None
         self._optimal_energy: float = float("inf")
         self._optimise_time: float = 0.0
 
@@ -135,16 +133,14 @@ class QAOASampler:
         #   σ_k[q] = +1 if bit q of k is 0, −1 if bit q is 1
         k = np.arange(N, dtype=np.int64)
         bits = ((k[:, None] >> np.arange(n)[None, :]) & 1).astype(np.float64)
-        spins = 1.0 - 2.0 * bits   # σ = 1 − 2x
+        spins = 1.0 - 2.0 * bits  # σ = 1 − 2x
 
         # H(σ_k) = h·σ_k + σ_k^T J σ_k
-        self._costs = np.einsum("ki,i->k", spins, h) + np.einsum(
-            "ki,ij,kj->k", spins, J, spins
-        )
+        self._costs = np.einsum("ki,i->k", spins, h) + np.einsum("ki,ij,kj->k", spins, J, spins)
 
         t0 = time.perf_counter()
         best_energy = float("inf")
-        best_params: Optional[np.ndarray] = None
+        best_params: np.ndarray | None = None
 
         for _ in range(self.n_restarts):
             x0 = self.rng.uniform(0, 2 * np.pi, size=2 * self.p)
@@ -211,11 +207,10 @@ class QAOASampler:
         unique = unique[:top_k]
         counts = counts[:top_k]
 
-        results: List[SampleResult] = []
-        for idx, cnt in zip(unique, counts):
-            bits = np.array(
-                [(int(idx) >> q) & 1 for q in range(n)], dtype=np.int64
-            )
+        assert self._costs is not None
+        results: list[SampleResult] = []
+        for idx, _cnt in zip(unique, counts, strict=False):
+            bits = np.array([(int(idx) >> q) & 1 for q in range(n)], dtype=np.int64)
             results.append(
                 SampleResult(
                     bitstring=bits,
@@ -229,7 +224,7 @@ class QAOASampler:
         return SamplerOutput(
             samples=results,
             optimal_energy=self._optimal_energy,
-            optimal_params=self._optimal_params.copy(),
+            optimal_params=self._optimal_params.copy() if self._optimal_params is not None else np.array([]),
             optimize_time_s=self._optimise_time,
             sample_time_s=sample_time,
             n_qubits=self._n,

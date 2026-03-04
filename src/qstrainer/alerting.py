@@ -19,10 +19,10 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from urllib.request import Request, urlopen
+from dataclasses import dataclass
+from typing import Any
 from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from qstrainer.models.alert import StrainDecision, StrainResult
 from qstrainer.models.enums import StrainAction, TaskVerdict
@@ -32,11 +32,12 @@ logger = logging.getLogger(__name__)
 
 # ── Base Route ──────────────────────────────────────────────
 
+
 class DecisionRoute(ABC):
     """Abstract base for strain decision destinations."""
 
     @abstractmethod
-    def send(self, decision: StrainDecision, context: Optional[StrainResult] = None) -> bool:
+    def send(self, decision: StrainDecision, context: StrainResult | None = None) -> bool:
         """Send a strain decision. Returns True on success."""
         ...
 
@@ -53,13 +54,14 @@ AlertRoute = DecisionRoute  # alias for existing code
 
 # ── Webhook Route ───────────────────────────────────────────
 
+
 class WebhookRoute(DecisionRoute):
     """Send strain decisions to a generic HTTP webhook endpoint."""
 
     def __init__(
         self,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         timeout_s: float = 5.0,
     ) -> None:
         self._url = url
@@ -70,7 +72,7 @@ class WebhookRoute(DecisionRoute):
     def name(self) -> str:
         return f"webhook({self._url[:40]}...)"
 
-    def send(self, decision: StrainDecision, context: Optional[StrainResult] = None) -> bool:
+    def send(self, decision: StrainDecision, context: StrainResult | None = None) -> bool:
         payload = {
             "source": "qstrainer",
             "timestamp": decision.timestamp,
@@ -91,7 +93,7 @@ class WebhookRoute(DecisionRoute):
 
         return self._post(payload)
 
-    def _post(self, payload: Dict) -> bool:
+    def _post(self, payload: dict) -> bool:
         try:
             data = json.dumps(payload, default=str).encode()
             req = Request(self._url, data=data, headers=self._headers, method="POST")
@@ -107,6 +109,7 @@ class WebhookRoute(DecisionRoute):
 
 # ── Slack Route ─────────────────────────────────────────────
 
+
 class SlackRoute(DecisionRoute):
     """Send strain decisions to Slack via Incoming Webhook."""
 
@@ -120,7 +123,7 @@ class SlackRoute(DecisionRoute):
     def __init__(
         self,
         webhook_url: str,
-        channel: Optional[str] = None,
+        channel: str | None = None,
         timeout_s: float = 5.0,
     ) -> None:
         self._url = webhook_url
@@ -131,7 +134,7 @@ class SlackRoute(DecisionRoute):
     def name(self) -> str:
         return "slack"
 
-    def send(self, decision: StrainDecision, context: Optional[StrainResult] = None) -> bool:
+    def send(self, decision: StrainDecision, context: StrainResult | None = None) -> bool:
         emoji = self.VERDICT_EMOJI.get(decision.verdict, ":question:")
         score_str = ""
         if context:
@@ -160,36 +163,40 @@ class SlackRoute(DecisionRoute):
         ]
 
         if context and context.compute_saved_flops > 0:
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": (
-                        f":zap: *Compute saved:* {context.compute_saved_flops:.2e} FLOPs | "
-                        f"${context.cost_saved_usd:.4f}"
-                    ),
-                },
-            })
+            blocks.append(
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f":zap: *Compute saved:* {context.compute_saved_flops:.2e} FLOPs | "
+                            f"${context.cost_saved_usd:.4f}"
+                        ),
+                    },
+                }
+            )
 
-        payload: Dict[str, Any] = {"blocks": blocks}
+        payload: dict[str, Any] = {"blocks": blocks}
         if self._channel:
             payload["channel"] = self._channel
 
         try:
             data = json.dumps(payload).encode()
             req = Request(
-                self._url, data=data,
+                self._url,
+                data=data,
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
             with urlopen(req, timeout=self._timeout) as resp:
-                return resp.status < 300
+                return bool(resp.status < 300)
         except (URLError, OSError) as e:
             logger.error("Slack delivery failed: %s", e)
             return False
 
 
 # ── PagerDuty Route ─────────────────────────────────────────
+
 
 class PagerDutyRoute(DecisionRoute):
     """Send strain decisions to PagerDuty Events API v2."""
@@ -210,7 +217,7 @@ class PagerDutyRoute(DecisionRoute):
     def name(self) -> str:
         return "pagerduty"
 
-    def send(self, decision: StrainDecision, context: Optional[StrainResult] = None) -> bool:
+    def send(self, decision: StrainDecision, context: StrainResult | None = None) -> bool:
         severity = self.VERDICT_SEVERITY.get(decision.verdict, "warning")
         payload = {
             "routing_key": self._routing_key,
@@ -239,12 +246,13 @@ class PagerDutyRoute(DecisionRoute):
         try:
             data = json.dumps(payload, default=str).encode()
             req = Request(
-                self.EVENTS_URL, data=data,
+                self.EVENTS_URL,
+                data=data,
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
             with urlopen(req, timeout=self._timeout) as resp:
-                return resp.status < 300
+                return bool(resp.status < 300)
         except (URLError, OSError) as e:
             logger.error("PagerDuty delivery failed: %s", e)
             return False
@@ -252,20 +260,19 @@ class PagerDutyRoute(DecisionRoute):
 
 # ── Decision Filter ─────────────────────────────────────────
 
+
 @dataclass
 class DecisionFilter:
     """Filter strain decisions before routing."""
 
     min_action: StrainAction = StrainAction.REDUCE
-    gpu_ids: Optional[List[str]] = None       # None = all GPUs
-    cooldown_s: float = 60.0                   # suppress duplicates within window
+    gpu_ids: list[str] | None = None  # None = all GPUs
+    cooldown_s: float = 60.0  # suppress duplicates within window
 
     def should_route(self, decision: StrainDecision) -> bool:
         if decision.action.value < self.min_action.value:
             return False
-        if self.gpu_ids is not None and decision.gpu_id not in self.gpu_ids:
-            return False
-        return True
+        return not (self.gpu_ids is not None and decision.gpu_id not in self.gpu_ids)
 
 
 # Backward compatibility alias
@@ -285,24 +292,24 @@ class DecisionRouter:
     """
 
     def __init__(self) -> None:
-        self._routes: List[tuple[DecisionRoute, DecisionFilter]] = []
-        self._last_sent: Dict[str, float] = {}
+        self._routes: list[tuple[DecisionRoute, DecisionFilter]] = []
+        self._last_sent: dict[str, float] = {}
 
-    def add_route(
-        self, route: DecisionRoute, filter: Optional[DecisionFilter] = None
-    ) -> None:
+    def add_route(self, route: DecisionRoute, filter: DecisionFilter | None = None) -> None:
         self._routes.append((route, filter or DecisionFilter()))
 
     def dispatch(
-        self, decision: StrainDecision, context: Optional[StrainResult] = None
-    ) -> Dict[str, bool]:
+        self, decision: StrainDecision, context: StrainResult | None = None
+    ) -> dict[str, bool]:
         """Send decision to all matching routes. Returns {route_name: success}."""
         results = {}
         for route, filt in self._routes:
             if not filt.should_route(decision):
                 continue
 
-            cooldown_key = f"{route.name}:{decision.gpu_id}:{decision.metric}:{decision.verdict.name}"
+            cooldown_key = (
+                f"{route.name}:{decision.gpu_id}:{decision.metric}:{decision.verdict.name}"
+            )
             now = time.time()
             last = self._last_sent.get(cooldown_key, 0)
             if now - last < filt.cooldown_s:
@@ -317,7 +324,7 @@ class DecisionRouter:
         return results
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "DecisionRouter":
+    def from_config(cls, cfg: dict) -> DecisionRouter:
         """Build router from config dict.
 
         Example config::

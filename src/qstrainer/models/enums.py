@@ -8,19 +8,19 @@ from enum import Enum, auto
 class TaskVerdict(Enum):
     """What the strainer decides for a compute task."""
 
-    EXECUTE = auto()      # Must run — contributes meaningfully
+    EXECUTE = auto()  # Must run — contributes meaningfully
     APPROXIMATE = auto()  # Run a cheaper approximation (lower precision, subset)
-    DEFER = auto()        # Postpone — batch with similar tasks later
-    SKIP = auto()         # Don't run — redundant or converged
+    DEFER = auto()  # Postpone — batch with similar tasks later
+    SKIP = auto()  # Don't run — redundant or converged
 
 
 class StrainAction(Enum):
     """Action severity / type of the straining decision."""
 
-    PASS_THROUGH = 0   # No straining, task executes normally
-    OPTIMISE = 1       # Task runs but with resource optimisation
-    REDUCE = 2         # Significant compute reduction applied
-    ELIMINATE = 3       # Task entirely eliminated (biggest savings)
+    PASS_THROUGH = 0  # No straining, task executes normally
+    OPTIMISE = 1  # Task runs but with resource optimisation
+    REDUCE = 2  # Significant compute reduction applied
+    ELIMINATE = 3  # Task entirely eliminated (biggest savings)
 
 
 class ComputePhase(Enum):

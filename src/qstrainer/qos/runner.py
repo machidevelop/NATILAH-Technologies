@@ -10,7 +10,6 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -27,14 +26,14 @@ class QOSRunner:
     def __init__(self, scheduler: QOSScheduler) -> None:
         self.scheduler = scheduler
         self._run_counter: int = 0
-        self._history: List[QOSReport] = []
+        self._history: list[QOSReport] = []
 
     def run(
         self,
         Q: np.ndarray,
         job_type: str = "qubo_generic",
-        prefer_solver: Optional[str] = None,
-        expected_k: Optional[int] = None,
+        prefer_solver: str | None = None,
+        expected_k: int | None = None,
     ) -> QOSReport:
         """Submit a QUBO job.  Returns a :class:`QOSReport`.
 
@@ -54,9 +53,7 @@ class QOSRunner:
 
         input_hash = hashlib.sha256(Q.tobytes()).hexdigest()[:16]
 
-        solver_name, solver = self.scheduler.select_solver(
-            n_variables=n, prefer=prefer_solver
-        )
+        solver_name, solver = self.scheduler.select_solver(n_variables=n, prefer=prefer_solver)
 
         try:
             result = solver.solve(Q)
@@ -65,9 +62,7 @@ class QOSRunner:
             solve_time = result.solve_time_s
             meta = result.metadata
         except Exception as exc:
-            logger.warning(
-                "Solver %s failed: %s. Falling back to SA.", solver_name, exc
-            )
+            logger.warning("Solver %s failed: %s. Falling back to SA.", solver_name, exc)
             fallback = SimulatedAnnealingSolver(num_reads=300, num_sweeps=2000)
             result = fallback.solve(Q)
             solution = result.solution
@@ -90,9 +85,7 @@ class QOSRunner:
             job_type=job_type,
             timestamp=datetime.now().isoformat(),
             solver_name=solver_name,
-            solver_type=(
-                solver.solver_type if hasattr(solver, "solver_type") else "unknown"
-            ),
+            solver_type=(solver.solver_type if hasattr(solver, "solver_type") else "unknown"),
             backend=meta.get("backend", solver_name),
             solution=solution,
             energy=energy,
@@ -110,14 +103,14 @@ class QOSRunner:
     def compare_solvers(
         self,
         Q: np.ndarray,
-        solver_names: Optional[List[str]] = None,
-        expected_k: Optional[int] = None,
-    ) -> List[QOSReport]:
+        solver_names: list[str] | None = None,
+        expected_k: int | None = None,
+    ) -> list[QOSReport]:
         """Run the same QUBO on multiple solvers and return comparison reports."""
         if solver_names is None:
             solver_names = self.scheduler.available_solvers()
 
-        reports: List[QOSReport] = []
+        reports: list[QOSReport] = []
         for name in solver_names:
             if self.scheduler.get_solver(name) is not None:
                 report = self.run(
@@ -130,7 +123,7 @@ class QOSRunner:
         return reports
 
     @property
-    def history(self) -> List[QOSReport]:
+    def history(self) -> list[QOSReport]:
         return list(self._history)
 
     def save_history(self, path: str = "runs/qos_history.json") -> None:

@@ -15,11 +15,10 @@ NEVER quantum — always fast, always online.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from qstrainer.models.frame import ComputeTask, FEATURE_NAMES
+from qstrainer.models.frame import FEATURE_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +34,10 @@ class ConvergenceStrainer:
     def __init__(self, z_threshold: float = 3.0, min_samples: int = 20) -> None:
         self.z_threshold = z_threshold
         self.min_samples = min_samples
-        self._baselines: Dict[str, Dict] = {}
+        self._baselines: dict[str, dict] = {}
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "ConvergenceStrainer":
+    def from_config(cls, cfg: dict) -> ConvergenceStrainer:
         sc = cfg.get("convergence", {})
         return cls(
             z_threshold=sc.get("z_threshold", 3.0),
@@ -47,7 +46,7 @@ class ConvergenceStrainer:
 
     def update_and_score(
         self, gpu_id: str, feature_vector: np.ndarray
-    ) -> Tuple[float, List[Tuple[str, float]]]:
+    ) -> tuple[float, list[tuple[str, float]]]:
         """Update baseline and return (redundancy_score, dominant_signals).
 
         redundancy_score: 0.0 = this task is unique/valuable
@@ -101,20 +100,17 @@ class ConvergenceStrainer:
 
         # Report which signals are most redundant or most novel
         top_idx = np.argsort(z_scores)[:5]  # lowest z = most redundant
-        dominant = [
-            (names[i] if i < len(names) else f"f{i}", float(z_scores[i]))
-            for i in top_idx
-        ]
+        dominant = [(names[i] if i < len(names) else f"f{i}", float(z_scores[i])) for i in top_idx]
 
         return score, dominant
 
-    def reset(self, gpu_id: Optional[str] = None) -> None:
+    def reset(self, gpu_id: str | None = None) -> None:
         if gpu_id:
             self._baselines.pop(gpu_id, None)
         else:
             self._baselines.clear()
 
-    def get_baseline_state(self) -> Dict:
+    def get_baseline_state(self) -> dict:
         """Return serialisable baseline state for checkpointing."""
         state = {}
         for gid, bl in self._baselines.items():
@@ -125,7 +121,7 @@ class ConvergenceStrainer:
             }
         return state
 
-    def load_baseline_state(self, state: Dict) -> None:
+    def load_baseline_state(self, state: dict) -> None:
         """Restore baselines from a checkpoint."""
         self._baselines.clear()
         for gid, data in state.items():

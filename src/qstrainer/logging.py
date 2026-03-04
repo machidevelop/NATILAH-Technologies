@@ -18,7 +18,7 @@ import time
 import traceback
 import uuid
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
+from typing import Any
 
 # ── Context Vars (correlation across async tasks) ───────────
 _correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
@@ -26,7 +26,7 @@ _gpu_id: ContextVar[str] = ContextVar("gpu_id", default="")
 _node_id: ContextVar[str] = ContextVar("node_id", default="")
 
 
-def set_correlation_id(cid: Optional[str] = None) -> str:
+def set_correlation_id(cid: str | None = None) -> str:
     """Set (or generate) a correlation ID for the current context."""
     cid = cid or uuid.uuid4().hex[:12]
     _correlation_id.set(cid)
@@ -47,6 +47,7 @@ def get_correlation_id() -> str:
 
 # ── JSON Formatter ──────────────────────────────────────────
 
+
 class JSONFormatter(logging.Formatter):
     """Emit log records as JSON lines.
 
@@ -58,7 +59,7 @@ class JSONFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        entry: Dict[str, Any] = {
+        entry: dict[str, Any] = {
             "ts": self._iso_time(record),
             "level": record.levelname,
             "logger": record.name,
@@ -102,14 +103,15 @@ class JSONFormatter(logging.Formatter):
 
 # ── Human-Readable Formatter ───────────────────────────────
 
+
 class HumanFormatter(logging.Formatter):
     """Coloured, human-readable log output for development."""
 
     COLORS = {
-        "DEBUG": "\033[36m",     # cyan
-        "INFO": "\033[32m",      # green
-        "WARNING": "\033[33m",   # yellow
-        "ERROR": "\033[31m",     # red
+        "DEBUG": "\033[36m",  # cyan
+        "INFO": "\033[32m",  # green
+        "WARNING": "\033[33m",  # yellow
+        "ERROR": "\033[31m",  # red
         "CRITICAL": "\033[41m",  # red bg
     }
     RESET = "\033[0m"
@@ -122,10 +124,7 @@ class HumanFormatter(logging.Formatter):
         gpu_str = f" gpu={gpu}" if gpu else ""
 
         msg = record.getMessage()
-        base = (
-            f"{color}{record.levelname:8s}{self.RESET} "
-            f"{record.name}{cid_str}{gpu_str} | {msg}"
-        )
+        base = f"{color}{record.levelname:8s}{self.RESET} {record.name}{cid_str}{gpu_str} | {msg}"
 
         if record.exc_info and record.exc_info[1]:
             base += "\n" + "".join(traceback.format_exception(*record.exc_info))
@@ -135,10 +134,11 @@ class HumanFormatter(logging.Formatter):
 
 # ── Setup ───────────────────────────────────────────────────
 
+
 def setup_logging(
     level: str = "INFO",
     json_output: bool = False,
-    stream=None,
+    stream: Any = None,
 ) -> None:
     """Configure logging for the entire ``qstrainer`` namespace.
 

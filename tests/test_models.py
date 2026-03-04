@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
-from qstrainer.models.enums import TaskVerdict, StrainAction, GPUType, ComputePhase, JobType
-from qstrainer.models.frame import ComputeTask, FEATURE_NAMES, N_BASE_FEATURES
-from qstrainer.models.buffer import WorkloadBuffer
 from qstrainer.models.alert import StrainDecision, StrainResult
+from qstrainer.models.buffer import WorkloadBuffer
+from qstrainer.models.enums import ComputePhase, GPUType, JobType, StrainAction, TaskVerdict
+from qstrainer.models.frame import FEATURE_NAMES, N_BASE_FEATURES, ComputeTask
 
 
 class TestEnums:
@@ -120,4 +119,3 @@ class TestStrainDecision:
         s = result.summary()
         assert "EXECUTE" in s
         assert "0.100" in s
-

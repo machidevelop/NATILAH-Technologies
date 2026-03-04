@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
-import pytest
-
 from qstrainer.models.enums import TaskVerdict
 from qstrainer.pipeline.strainer import QStrainer
 
@@ -54,4 +51,3 @@ class TestQStrainerPipeline:
         result = qs.process_task(f)
         assert result is not None
         assert result.verdict in TaskVerdict
-

@@ -14,7 +14,6 @@ ones → EXECUTE.  Tasks that look unlike them → candidates for straining.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -36,12 +35,12 @@ class PredictiveStrainer:
     def __init__(self, nu: float = 0.05, kernel: str = "rbf") -> None:
         self.nu = nu
         self.kernel = kernel
-        self._model: Optional[OneClassSVM] = None
-        self._scaler: Optional[StandardScaler] = None
-        self._selected_features: Optional[List[int]] = None
+        self._model: OneClassSVM | None = None
+        self._scaler: StandardScaler | None = None
+        self._selected_features: list[int] | None = None
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "PredictiveStrainer":
+    def from_config(cls, cfg: dict) -> PredictiveStrainer:
         mc = cfg.get("ml_predictor", {})
         return cls(
             nu=mc.get("nu", 0.05),
@@ -51,7 +50,7 @@ class PredictiveStrainer:
     def train(
         self,
         X_valuable: np.ndarray,
-        selected_features: Optional[List[int]] = None,
+        selected_features: list[int] | None = None,
     ) -> None:
         """Train on VALUABLE compute tasks — tasks that produced
         meaningful parameter updates / loss improvements.
@@ -101,17 +100,18 @@ class PredictiveStrainer:
         X_scaled = self._scaler.transform(X)  # type: ignore[union-attr]
 
         raw = self._model.decision_function(X_scaled)
-        return 1.0 / (1.0 + np.exp(raw * 2))
+        return np.asarray(1.0 / (1.0 + np.exp(raw * 2)))
 
     @property
     def is_trained(self) -> bool:
         return self._model is not None
 
-    def get_state(self) -> Dict:
+    def get_state(self) -> dict:
         """Return state dict for checkpointing (JSON-safe)."""
-        import pickle, base64
+        import base64
+        import pickle
 
-        state: Dict = {
+        state: dict = {
             "nu": self.nu,
             "kernel": self.kernel,
             "selected_features": self._selected_features,
@@ -122,9 +122,10 @@ class PredictiveStrainer:
             state["scaler_b64"] = base64.b64encode(pickle.dumps(self._scaler)).decode()
         return state
 
-    def load_state(self, state: Dict) -> None:
+    def load_state(self, state: dict) -> None:
         """Restore from checkpoint state."""
-        import pickle, base64
+        import base64
+        import pickle
 
         self.nu = state.get("nu", self.nu)
         self.kernel = state.get("kernel", self.kernel)

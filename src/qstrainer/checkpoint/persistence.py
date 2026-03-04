@@ -7,15 +7,12 @@ Welford baselines, trained SVM, and pipeline counters are preserved.
 from __future__ import annotations
 
 import glob
-import json
 import logging
-import os
 import pickle
-import time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +37,11 @@ class CheckpointManager:
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Save / Restore ──────────────────────────────────────
-    def save(self, pipeline) -> Path:
+    def save(self, pipeline: Any) -> Path:
         """Save the pipeline state to a timestamped checkpoint file."""
         from qstrainer import __version__
 
-        state: Dict[str, Any] = {
+        state: dict[str, Any] = {
             "version": __version__,
             "timestamp": datetime.now().isoformat(),
             "task_count": getattr(pipeline, "_task_count", 0),
@@ -76,7 +73,7 @@ class CheckpointManager:
         self._prune_old()
         return path
 
-    def try_restore(self, pipeline) -> bool:
+    def try_restore(self, pipeline: Any) -> bool:
         """Restore the most recent checkpoint into *pipeline*.  Returns True on success."""
         latest = self._latest_checkpoint()
         if latest is None:
@@ -100,7 +97,11 @@ class CheckpointManager:
             pipeline.convergence.load_baseline_state(state["convergence_state"])
 
         # Restore ML predictor
-        if "predictor_state" in state and hasattr(pipeline, "predictor") and pipeline.predictor is not None:
+        if (
+            "predictor_state" in state
+            and hasattr(pipeline, "predictor")
+            and pipeline.predictor is not None
+        ):
             pipeline.predictor.load_state(state["predictor_state"])
 
         # Restore verdict counts
@@ -164,7 +165,7 @@ class CheckpointManager:
         files = sorted(Path(p) for p in glob.glob(pattern))
         return files
 
-    def _latest_checkpoint(self) -> Optional[Path]:
+    def _latest_checkpoint(self) -> Path | None:
         files = self._all_checkpoints()
         return files[-1] if files else None
 

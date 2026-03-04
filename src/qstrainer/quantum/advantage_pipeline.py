@@ -25,24 +25,23 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 import numpy as np
 
 from qstrainer.models.frame import ComputeTask
-from qstrainer.quantum.conflict_graph import ConflictGraph
-from qstrainer.quantum.ising import qubo_to_ising
-from qstrainer.quantum.qaoa_circuit import QAOASampler, SamplerOutput
-from qstrainer.quantum.purifier import GraphPurifier, PurificationResult
 from qstrainer.quantum.coloring import (
     ColoringResult,
     dsatur_coloring,
     makespan,
     validate_coloring,
 )
-
+from qstrainer.quantum.conflict_graph import ConflictGraph
+from qstrainer.quantum.ising import qubo_to_ising
+from qstrainer.quantum.purifier import GraphPurifier, PurificationResult
+from qstrainer.quantum.qaoa_circuit import QAOASampler, SamplerOutput
 
 # ── Pipeline config ──────────────────────────────────────────
+
 
 @dataclass
 class PipelineConfig:
@@ -70,15 +69,16 @@ class PipelineConfig:
 
 # ── Pipeline result ──────────────────────────────────────────
 
+
 @dataclass
 class QuantumScheduleResult:
     """Complete output from the quantum advantage pipeline."""
 
     # Schedule
-    original_makespan: int          # colours needed BEFORE purification
-    purified_makespan: int          # colours needed AFTER purification
-    makespan_reduction: float       # (orig − purified) / orig
-    time_slots: Dict[int, List[int]]  # slot → task indices (purified)
+    original_makespan: int  # colours needed BEFORE purification
+    purified_makespan: int  # colours needed AFTER purification
+    makespan_reduction: float  # (orig − purified) / orig
+    time_slots: dict[int, list[int]]  # slot → task indices (purified)
 
     # Graph stats
     n_tasks: int
@@ -96,7 +96,7 @@ class QuantumScheduleResult:
     # Quantum metrics
     qubo_size: int
     ising_h_norm: float
-    ising_j_nnz: int                # number of non-zero couplings
+    ising_j_nnz: int  # number of non-zero couplings
     qaoa_optimal_energy: float
     n_samples_used: int
     purify_threshold: float
@@ -118,15 +118,14 @@ class QuantumScheduleResult:
     total_time: float
 
     # Raw intermediates (for dashboard / debugging)
-    sampler_output: Optional[SamplerOutput] = field(default=None, repr=False)
-    purification_result: Optional[PurificationResult] = field(
-        default=None, repr=False
-    )
-    original_coloring: Optional[ColoringResult] = field(default=None, repr=False)
-    purified_coloring: Optional[ColoringResult] = field(default=None, repr=False)
+    sampler_output: SamplerOutput | None = field(default=None, repr=False)
+    purification_result: PurificationResult | None = field(default=None, repr=False)
+    original_coloring: ColoringResult | None = field(default=None, repr=False)
+    purified_coloring: ColoringResult | None = field(default=None, repr=False)
 
 
 # ── QuantumAdvantagePipeline ─────────────────────────────────
+
 
 class QuantumAdvantagePipeline:
     """End-to-end quantum advantage pipeline for GPU task scheduling.
@@ -144,7 +143,7 @@ class QuantumAdvantagePipeline:
 
     def run(
         self,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         graph: ConflictGraph | None = None,
     ) -> QuantumScheduleResult:
         """Execute the full quantum advantage pipeline.

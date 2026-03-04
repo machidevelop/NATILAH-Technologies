@@ -7,16 +7,16 @@ Markers:
     @pytest.mark.slow — excluded from default test runs
 """
 
-import time
 import statistics
+import time
 
-import pytest
 import numpy as np
+import pytest
 
-from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
-from qstrainer.pipeline.strainer import QStrainer
-from qstrainer.models.buffer import WorkloadBuffer
 from qstrainer.features.derived import DerivedFeatureExtractor
+from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
+from qstrainer.models.buffer import WorkloadBuffer
+from qstrainer.pipeline.strainer import QStrainer
 
 
 @pytest.mark.slow
@@ -109,8 +109,10 @@ class TestFleetThroughput:
 
         achieved_tps = total_tasks / elapsed
         target_tps = n_gpus * hz
-        print(f"\nSustained: {total_tasks} tasks in {elapsed:.3f}s "
-              f"({achieved_tps:.0f} tps, target={target_tps} tps)")
+        print(
+            f"\nSustained: {total_tasks} tasks in {elapsed:.3f}s "
+            f"({achieved_tps:.0f} tps, target={target_tps} tps)"
+        )
         assert achieved_tps > target_tps, (
             f"Only achieved {achieved_tps:.0f} tps (need {target_tps})"
         )
@@ -172,4 +174,3 @@ class TestFeatureExtractorPerformance:
 
         print(f"\nFeature transform (1000x15->60): {elapsed_ms:.1f}ms")
         assert elapsed_ms < 500, f"Feature transform took {elapsed_ms:.1f}ms (target <500ms)"
-

@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from qstrainer.solvers.base import QUBOResult
-from qstrainer.solvers.sa import SimulatedAnnealingSolver
-from qstrainer.solvers.qaoa import QAOASolver
 from qstrainer.solvers.mock import MockQuantumSolver
+from qstrainer.solvers.qaoa import QAOASolver
+from qstrainer.solvers.sa import SimulatedAnnealingSolver
 
 
 def _random_qubo(n: int = 10, seed: int = 0) -> np.ndarray:

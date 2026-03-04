@@ -19,9 +19,10 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class QStrainerDaemon:
         If True, use synthetic telemetry instead of NVML.
     """
 
-    def __init__(self, cfg: Dict[str, Any], *, dry_run: bool = False) -> None:
+    def __init__(self, cfg: dict[str, Any], *, dry_run: bool = False) -> None:
         self._cfg = cfg
         self._dry_run = dry_run
         self._shutdown_event = asyncio.Event()
@@ -54,7 +55,7 @@ class QStrainerDaemon:
 
     async def run(self) -> None:
         """Main entry point — runs until shutdown is requested."""
-        from qstrainer.logging import set_correlation_id, set_context
+        from qstrainer.logging import set_correlation_id
         from qstrainer.profiling import MemoryProfiler
 
         set_correlation_id()  # unique ID for this agent run
@@ -69,9 +70,7 @@ class QStrainerDaemon:
         # ---- Memory profiler ----
         profiler = MemoryProfiler(
             snapshot_interval=int(self._poll_hz * 60),  # ~once per minute
-            tracemalloc_enabled=self._cfg.get("agent", {}).get(
-                "tracemalloc", False
-            ),
+            tracemalloc_enabled=self._cfg.get("agent", {}).get("tracemalloc", False),
         )
         profiler.start()
 
@@ -82,7 +81,9 @@ class QStrainerDaemon:
         interval = 1.0 / self._poll_hz
         logger.info(
             "Agent loop: %.1f Hz (%d ms per tick), %d emitter(s)",
-            self._poll_hz, interval * 1000, len(emitters),
+            self._poll_hz,
+            interval * 1000,
+            len(emitters),
         )
 
         try:
@@ -119,12 +120,8 @@ class QStrainerDaemon:
                 elapsed = time.perf_counter() - t0
                 sleep_for = max(0.0, interval - elapsed)
                 if sleep_for > 0:
-                    try:
-                        await asyncio.wait_for(
-                            self._shutdown_event.wait(), timeout=sleep_for
-                        )
-                    except asyncio.TimeoutError:
-                        pass
+                    with contextlib.suppress(asyncio.TimeoutError):
+                        await asyncio.wait_for(self._shutdown_event.wait(), timeout=sleep_for)
         finally:
             # Final checkpoint on shutdown
             if checkpoint_mgr is not None:
@@ -132,12 +129,10 @@ class QStrainerDaemon:
             profiler.stop()
             logger.info("\n%s", profiler.report())
             self._teardown(ingestor, emitters)
-            logger.info(
-                "Agent stopped. Total tasks processed: %d", self._total_tasks
-            )
+            logger.info("Agent stopped. Total tasks processed: %d", self._total_tasks)
 
     # ── Component Builders ──────────────────────────────────
-    def _build_ingestor(self):
+    def _build_ingestor(self) -> Any:
         """Build the telemetry ingestor (NVML or synthetic)."""
         if self._dry_run:
             from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
@@ -154,16 +149,16 @@ class QStrainerDaemon:
             ingestor.init()
             return ingestor
 
-    def _build_pipeline(self):
+    def _build_pipeline(self) -> Any:
         """Build the QStrainer pipeline from config."""
         from qstrainer.pipeline.strainer import QStrainer
 
         pipeline_cfg = self._cfg.get("pipeline", {})
         return QStrainer.from_config(pipeline_cfg)
 
-    def _build_emitters(self):
+    def _build_emitters(self) -> list[Any]:
         """Build configured emitters."""
-        emitters = []
+        emitters: list[Any] = []
         emit_cfg = self._cfg.get("emitters", {})
 
         if emit_cfg.get("prometheus", {}).get("enabled", False):
@@ -189,10 +184,12 @@ class QStrainerDaemon:
                 from qstrainer.emission.kafka_emitter import KafkaEmitter
 
                 kafka_cfg = emit_cfg["kafka"]
-                emitters.append(KafkaEmitter(
-                    bootstrap_servers=kafka_cfg.get("bootstrap_servers", "localhost:9092"),
-                    topic=kafka_cfg.get("topic", "qstrainer-alerts"),
-                ))
+                emitters.append(
+                    KafkaEmitter(
+                        bootstrap_servers=kafka_cfg.get("bootstrap_servers", "localhost:9092"),
+                        topic=kafka_cfg.get("topic", "qstrainer-alerts"),
+                    )
+                )
             except ImportError:
                 logger.warning("confluent-kafka not installed, skipping Kafka emitter")
 
@@ -200,7 +197,7 @@ class QStrainerDaemon:
         emitters.append(_LogEmitter())
         return emitters
 
-    def _build_checkpoint_mgr(self):
+    def _build_checkpoint_mgr(self) -> Any:
         """Build checkpoint manager if configured."""
         ckpt_cfg = self._cfg.get("checkpoint", {})
         if not ckpt_cfg.get("enabled", True):
@@ -212,7 +209,7 @@ class QStrainerDaemon:
             max_checkpoints=ckpt_cfg.get("max_checkpoints", 5),
         )
 
-    def _teardown(self, ingestor, emitters):
+    def _teardown(self, ingestor: Any, emitters: list[Any]) -> None:
         """Clean shutdown of components."""
         if hasattr(ingestor, "shutdown"):
             try:
@@ -229,10 +226,11 @@ class QStrainerDaemon:
 
 # ── Adapters ────────────────────────────────────────────────
 
+
 class _SyntheticIngestorAdapter:
     """Wraps SyntheticTelemetryGenerator to expose the same poll() interface."""
 
-    def __init__(self, gen, *, n_gpus: int = 8):
+    def __init__(self, gen: Any, *, n_gpus: int = 8) -> None:
         from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
 
         self._gen: SyntheticTelemetryGenerator = gen
@@ -240,7 +238,7 @@ class _SyntheticIngestorAdapter:
         self._frame_idx = 0
         self._rng = gen.rng
 
-    def poll(self):
+    def poll(self) -> list[Any]:
         frames = []
         for gpu_idx in range(self._n_gpus):
             gpu_id = f"GPU-SYN-{gpu_idx:04d}"
@@ -257,14 +255,14 @@ class _SyntheticIngestorAdapter:
         self._frame_idx += 1
         return frames
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         pass
 
 
 class _LogEmitter:
     """Default emitter: logs strain results at INFO level."""
 
-    def emit(self, result) -> None:
+    def emit(self, result: Any) -> None:
         if result.decisions:
             for d in result.decisions:
                 logger.warning(
@@ -282,5 +280,5 @@ class _LogEmitter:
                 result.confidence,
             )
 
-    def close(self):
+    def close(self) -> None:
         pass

@@ -13,33 +13,32 @@ import time
 import numpy as np
 import pytest
 
-from qstrainer.models.frame import ComputeTask
 from qstrainer.models.enums import ComputePhase, JobType
-from qstrainer.quantum.conflict_graph import ConflictGraph, Edge
-from qstrainer.quantum.ising import (
-    qubo_to_ising,
-    ising_to_qubo,
-    qubo_energy,
-    ising_energy,
-    binary_to_spin,
-    spin_to_binary,
+from qstrainer.models.frame import ComputeTask
+from qstrainer.quantum.advantage_pipeline import (
+    PipelineConfig,
+    QuantumAdvantagePipeline,
+    QuantumScheduleResult,
 )
-from qstrainer.quantum.qaoa_circuit import QAOASampler, SamplerOutput
-from qstrainer.quantum.purifier import GraphPurifier, PurificationResult
 from qstrainer.quantum.coloring import (
     dsatur_coloring,
     makespan,
     validate_coloring,
-    ColoringResult,
 )
-from qstrainer.quantum.advantage_pipeline import (
-    QuantumAdvantagePipeline,
-    PipelineConfig,
-    QuantumScheduleResult,
+from qstrainer.quantum.conflict_graph import ConflictGraph
+from qstrainer.quantum.ising import (
+    binary_to_spin,
+    ising_energy,
+    ising_to_qubo,
+    qubo_energy,
+    qubo_to_ising,
+    spin_to_binary,
 )
-
+from qstrainer.quantum.purifier import GraphPurifier
+from qstrainer.quantum.qaoa_circuit import QAOASampler, SamplerOutput
 
 # ── Helpers ──────────────────────────────────────────────────
+
 
 def _make_task(
     gpu_id: str = "GPU-0",
@@ -81,6 +80,7 @@ def _make_task(
 
 
 # ═══ ISING CONVERSION ═══════════════════════════════════════
+
 
 class TestIsingConversion:
     """QUBO ↔ Ising round-trips and energy consistency."""
@@ -126,7 +126,8 @@ class TestIsingConversion:
             e_back = qubo_energy(x, Q_back) + off2 + off1
             # The round-trip should give same physical energy up to constant
             # We compare relative: e_orig == e_back - off2_correction
-            # Actually: Q_orig → (h,J,off1) → Q_back,off2 → qubo_energy(x, Q_back)+off2 = ising_energy(σ,h,J)
+            # Actually: Q_orig → (h,J,off1) → Q_back,off2
+            # → qubo_energy(x, Q_back)+off2 = ising_energy(σ,h,J)
             # and ising_energy(σ,h,J) + off1 = qubo_energy(x, Q_orig)
             # So qubo_energy(x, Q_back) + off2 + off1 = qubo_energy(x, Q_orig)
             assert abs(e_orig - e_back) < 1e-10
@@ -144,6 +145,7 @@ class TestIsingConversion:
 
 
 # ═══ CONFLICT GRAPH ═════════════════════════════════════════
+
 
 class TestConflictGraph:
     """ConflictGraph construction and properties."""
@@ -178,10 +180,12 @@ class TestConflictGraph:
             _make_task("GPU-0", step=100),
             _make_task("GPU-1", step=100),
         ]
-        g_same = ConflictGraph.from_tasks([
-            _make_task("GPU-0", step=100),
-            _make_task("GPU-0", step=101),
-        ])
+        g_same = ConflictGraph.from_tasks(
+            [
+                _make_task("GPU-0", step=100),
+                _make_task("GPU-0", step=101),
+            ]
+        )
         g_diff = ConflictGraph.from_tasks(tasks)
         # Same GPU should have higher weight or more edges
         if g_diff.num_edges > 0 and g_same.num_edges > 0:
@@ -224,6 +228,7 @@ class TestConflictGraph:
 
 
 # ═══ QAOA SAMPLER ════════════════════════════════════════════
+
 
 class TestQAOASampler:
     """QAOA circuit construction, optimisation, and sampling."""
@@ -289,21 +294,25 @@ class TestQAOASampler:
 
 # ═══ GRAPH PURIFIER ═════════════════════════════════════════
 
+
 class TestGraphPurifier:
     """Graph purification via QAOA bitstring samples."""
 
     def _make_sampler_output(self, n: int, n_samples: int = 8):
         """Create a fake SamplerOutput for testing."""
-        from qstrainer.quantum.qaoa_circuit import SampleResult, SamplerOutput
+        from qstrainer.quantum.qaoa_circuit import SampleResult
+
         rng = np.random.default_rng(42)
         samples = []
         for _ in range(n_samples):
             bits = rng.integers(0, 2, size=n).astype(np.int64)
-            samples.append(SampleResult(
-                bitstring=bits,
-                probability=1.0 / n_samples,
-                ising_energy=rng.standard_normal(),
-            ))
+            samples.append(
+                SampleResult(
+                    bitstring=bits,
+                    probability=1.0 / n_samples,
+                    ising_energy=rng.standard_normal(),
+                )
+            )
         return SamplerOutput(
             samples=samples,
             optimal_energy=-1.0,
@@ -353,6 +362,7 @@ class TestGraphPurifier:
 
 
 # ═══ GRAPH COLORING ═════════════════════════════════════════
+
 
 class TestDSaturColoring:
     """DSatur graph coloring and makespan."""
@@ -427,6 +437,7 @@ class TestDSaturColoring:
 
 # ═══ END-TO-END PIPELINE ════════════════════════════════════
 
+
 class TestQuantumAdvantagePipeline:
     """Full pipeline: tasks → conflict graph → QUBO → Ising → QAOA → purify → colour."""
 
@@ -434,19 +445,27 @@ class TestQuantumAdvantagePipeline:
         tasks = []
         gpus = ["GPU-0", "GPU-1", "GPU-2", "GPU-3"]
         for i in range(n):
-            tasks.append(_make_task(
-                gpu_id=gpus[i % 4],
-                step=100 + i,
-                memory=0.3 + (i % 3) * 0.2,
-                data_sim=0.4 + (i % 5) * 0.1,
-            ))
+            tasks.append(
+                _make_task(
+                    gpu_id=gpus[i % 4],
+                    step=100 + i,
+                    memory=0.3 + (i % 3) * 0.2,
+                    data_sim=0.4 + (i % 5) * 0.1,
+                )
+            )
         return tasks
 
     def test_pipeline_runs(self):
         tasks = self._make_batch(12)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=30, n_shots=128, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=30,
+                n_shots=128,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert isinstance(result, QuantumScheduleResult)
         assert result.n_tasks == 12
@@ -454,37 +473,61 @@ class TestQuantumAdvantagePipeline:
 
     def test_makespan_reduction_non_negative(self):
         tasks = self._make_batch(12)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=30, n_shots=256, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=30,
+                n_shots=256,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.makespan_reduction >= -0.1  # allow tiny tolerance
         assert result.purified_makespan <= result.original_makespan + 1
 
     def test_colorings_valid(self):
         tasks = self._make_batch(12)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=30, n_shots=128, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=30,
+                n_shots=128,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.original_coloring_valid
         assert result.purified_coloring_valid
 
     def test_edges_dropped(self):
         tasks = self._make_batch(16)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=30, n_shots=256,
-            purify_threshold=0.4, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=30,
+                n_shots=256,
+                purify_threshold=0.4,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.edges_dropped >= 0
         assert result.purified_edges <= result.original_edges
 
     def test_timing_breakdown(self):
         tasks = self._make_batch(8)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=1, maxfev=20, n_shots=64, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=1,
+                maxfev=20,
+                n_shots=64,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.graph_build_time >= 0
         assert result.qaoa_optimize_time >= 0
@@ -494,9 +537,15 @@ class TestQuantumAdvantagePipeline:
 
     def test_ising_metrics(self):
         tasks = self._make_batch(8)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=1, maxfev=20, n_shots=64, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=1,
+                maxfev=20,
+                n_shots=64,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.qubo_size == 8
         assert result.ising_h_norm > 0
@@ -504,9 +553,15 @@ class TestQuantumAdvantagePipeline:
 
     def test_time_slots_cover_all_tasks(self):
         tasks = self._make_batch(12)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=30, n_shots=128, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=30,
+                n_shots=128,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         all_tasks = set()
         for slot_tasks in result.time_slots.values():
@@ -517,18 +572,30 @@ class TestQuantumAdvantagePipeline:
         """Pipeline accepts a pre-built conflict graph."""
         tasks = self._make_batch(6)
         graph = ConflictGraph.from_tasks(tasks)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=1, maxfev=20, n_shots=64, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=1,
+                maxfev=20,
+                n_shots=64,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks, graph=graph)
         assert result.n_tasks == 6
 
     def test_larger_batch_16(self):
         """16-task batch completes without errors."""
         tasks = self._make_batch(16)
-        pipeline = QuantumAdvantagePipeline(PipelineConfig(
-            p_layers=1, n_restarts=2, maxfev=40, n_shots=256, seed=42,
-        ))
+        pipeline = QuantumAdvantagePipeline(
+            PipelineConfig(
+                p_layers=1,
+                n_restarts=2,
+                maxfev=40,
+                n_shots=256,
+                seed=42,
+            )
+        )
         result = pipeline.run(tasks)
         assert result.n_tasks == 16
         assert result.purified_coloring_valid

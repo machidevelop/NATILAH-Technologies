@@ -6,19 +6,16 @@ These tests exercise the complete flow:
 No mocks — real stages, real scoring, real prediction.
 """
 
-import pytest
 import numpy as np
+import pytest
 
 from qstrainer.config import load_config
+from qstrainer.features.derived import DerivedFeatureExtractor
 from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
 from qstrainer.models.buffer import WorkloadBuffer
-from qstrainer.models.enums import TaskVerdict, StrainAction
+from qstrainer.models.enums import TaskVerdict
 from qstrainer.models.frame import N_BASE_FEATURES
 from qstrainer.pipeline.strainer import QStrainer
-from qstrainer.stages.threshold import RedundancyStrainer
-from qstrainer.stages.statistical import ConvergenceStrainer
-from qstrainer.stages.ml import PredictiveStrainer
-from qstrainer.features.derived import DerivedFeatureExtractor
 
 
 class TestEndToEndPipeline:
@@ -206,4 +203,3 @@ class TestEndToEndConfig:
 
         pipeline = QStrainer.from_config(cfg)
         assert pipeline.strain_threshold == 0.7
-

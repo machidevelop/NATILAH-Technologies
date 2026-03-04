@@ -33,24 +33,24 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 import numpy as np
 
 from qstrainer.models.alert import StrainDecision, StrainResult
-from qstrainer.models.enums import TaskVerdict, StrainAction
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
-from qstrainer.stages.threshold import RedundancyStrainer
-from qstrainer.stages.statistical import ConvergenceStrainer
-from qstrainer.stages.ml import PredictiveStrainer
-from qstrainer.solvers.base import QUBOSolverBase, QUBOResult
+from qstrainer.models.enums import TaskVerdict
+from qstrainer.models.frame import N_BASE_FEATURES, ComputeTask
 from qstrainer.qos.scheduler import QOSScheduler
+from qstrainer.solvers.base import QUBOResult
+from qstrainer.stages.ml import PredictiveStrainer
+from qstrainer.stages.statistical import ConvergenceStrainer
+from qstrainer.stages.threshold import RedundancyStrainer
 
 logger = logging.getLogger(__name__)
 
 
 # ── Tuning knobs ─────────────────────────────────────────────
+
 
 @dataclass
 class SchedulerConfig:
@@ -63,15 +63,16 @@ class SchedulerConfig:
     max_strain_rate — hard cap on fraction strained per batch (safety net).
     """
 
-    alpha: float = 2.0     # quality vs. savings tradeoff
-    beta: float = 0.4      # data-similarity penalty strength
-    gamma: float = 0.3     # consecutive-step anti-correlation
-    delta: float = 0.15    # cross-GPU balance incentive
-    max_strain_rate: float = 0.70   # never strain more than 70% of a batch
-    batch_size: int = 32   # sweet-spot for QAOA on near-term quantum HW
+    alpha: float = 2.0  # quality vs. savings tradeoff
+    beta: float = 0.4  # data-similarity penalty strength
+    gamma: float = 0.3  # consecutive-step anti-correlation
+    delta: float = 0.15  # cross-GPU balance incentive
+    max_strain_rate: float = 0.70  # never strain more than 70% of a batch
+    batch_size: int = 32  # sweet-spot for QAOA on near-term quantum HW
 
 
 # ── QUBO Builder ─────────────────────────────────────────────
+
 
 class QUBOBuilder:
     """Constructs the QUBO matrix from a batch of scored tasks.
@@ -86,10 +87,10 @@ class QUBOBuilder:
 
     def build(
         self,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         redundancy_scores: np.ndarray,
         vectors: np.ndarray,
-        decisions_per_task: List[List[StrainDecision]],
+        decisions_per_task: list[list[StrainDecision]],
     ) -> np.ndarray:
         """Build and return the N×N QUBO matrix Q.
 
@@ -132,9 +133,9 @@ class QUBOBuilder:
     def _add_linear_terms(
         self,
         Q: np.ndarray,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         redundancy_scores: np.ndarray,
-        decisions_per_task: List[List[StrainDecision]],
+        decisions_per_task: list[list[StrainDecision]],
     ) -> None:
         """Diagonal: h_i = cost_i - α * importance_i.
 
@@ -159,7 +160,7 @@ class QUBOBuilder:
     def _add_similarity_coupling(
         self,
         Q: np.ndarray,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         vectors: np.ndarray,
     ) -> None:
         """Off-diagonal: positive coupling between similar tasks on same GPU.
@@ -191,7 +192,7 @@ class QUBOBuilder:
     def _add_consecutive_coupling(
         self,
         Q: np.ndarray,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
     ) -> None:
         """Off-diagonal: negative coupling between consecutive steps.
 
@@ -205,11 +206,12 @@ class QUBOBuilder:
 
         # Group by (gpu_id, job_id) and sort by step_number
         from collections import defaultdict
-        groups: Dict[Tuple[str, str], List[int]] = defaultdict(list)
+
+        groups: dict[tuple[str, str], list[int]] = defaultdict(list)
         for idx, t in enumerate(tasks):
             groups[(t.gpu_id, t.job_id)].append(idx)
 
-        for key, indices in groups.items():
+        for _key, indices in groups.items():
             indices_sorted = sorted(indices, key=lambda x: tasks[x].step_number)
             for k in range(len(indices_sorted) - 1):
                 i = indices_sorted[k]
@@ -221,7 +223,7 @@ class QUBOBuilder:
     def _add_fairness_coupling(
         self,
         Q: np.ndarray,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
     ) -> None:
         """Off-diagonal: negative coupling across different GPUs in same job.
 
@@ -235,8 +237,7 @@ class QUBOBuilder:
 
         for i in range(N):
             for j in range(i + 1, N):
-                if (tasks[i].job_id == tasks[j].job_id and
-                        tasks[i].gpu_id != tasks[j].gpu_id):
+                if tasks[i].job_id == tasks[j].job_id and tasks[i].gpu_id != tasks[j].gpu_id:
                     Q[i, j] -= δ  # encourage executing across GPUs
 
     def _add_strain_rate_constraint(
@@ -260,6 +261,7 @@ class QUBOBuilder:
 
 
 # ── Quantum Strain Scheduler ────────────────────────────────
+
 
 class QuantumStrainScheduler:
     """Batch scheduler that uses QUBO optimization to decide which tasks to strain.
@@ -306,13 +308,13 @@ class QuantumStrainScheduler:
         self._total_time_saved: float = 0.0
         self._total_cost_saved: float = 0.0
         self._total_solve_time: float = 0.0
-        self._qubo_energies: List[float] = []
+        self._qubo_energies: list[float] = []
 
     def schedule(
         self,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         prefer_solver: str | None = None,
-    ) -> List[StrainResult]:
+    ) -> list[StrainResult]:
         """Schedule a batch of tasks using QUBO optimization.
 
         Parameters
@@ -336,14 +338,11 @@ class QuantumStrainScheduler:
         t_start = time.perf_counter()
 
         # ── Stage 1: Redundancy check (per-task) ────────────
-        decisions_per_task: List[List[StrainDecision]] = [
-            self.redundancy.check(t) for t in tasks
-        ]
+        decisions_per_task: list[list[StrainDecision]] = [self.redundancy.check(t) for t in tasks]
 
         # Identify hard SKIPs from Stage 1
         skip_mask = np.array(
-            [any(d.verdict == TaskVerdict.SKIP for d in ds)
-             for ds in decisions_per_task],
+            [any(d.verdict == TaskVerdict.SKIP for d in ds) for ds in decisions_per_task],
             dtype=bool,
         )
 
@@ -385,7 +384,8 @@ class QuantumStrainScheduler:
 
         # ── Solve QUBO ──────────────────────────────────────
         solver_name, solver = self.qos.select_solver(
-            n_variables=N, prefer=prefer_solver,
+            n_variables=N,
+            prefer=prefer_solver,
         )
         qubo_result = solver.solve(Q)
 
@@ -396,26 +396,33 @@ class QuantumStrainScheduler:
         # ── Map solution to verdicts ────────────────────────
         solution = qubo_result.solution
         results = self._interpret_solution(
-            tasks, vectors, solution, redundancy_scores,
-            conv_scores, decisions_per_task, conv_signals_list,
-            qubo_result, solver_name, solve_time,
+            tasks,
+            vectors,
+            solution,
+            redundancy_scores,
+            conv_scores,
+            decisions_per_task,
+            conv_signals_list,
+            qubo_result,
+            solver_name,
+            solve_time,
         )
 
         return results
 
     def _interpret_solution(
         self,
-        tasks: List[ComputeTask],
+        tasks: list[ComputeTask],
         vectors: np.ndarray,
         solution: np.ndarray,
         redundancy_scores: np.ndarray,
         conv_scores: np.ndarray,
-        decisions_per_task: List[List[StrainDecision]],
+        decisions_per_task: list[list[StrainDecision]],
         conv_signals_list: list,
         qubo_result: QUBOResult,
         solver_name: str,
         solve_time: float,
-    ) -> List[StrainResult]:
+    ) -> list[StrainResult]:
         """Map binary QUBO solution → StrainResult list.
 
         x_i = 1 → EXECUTE
@@ -424,7 +431,7 @@ class QuantumStrainScheduler:
         x_i = 0 (else) → DEFER
         """
         N = len(tasks)
-        results: List[StrainResult] = []
+        results: list[StrainResult] = []
 
         for i in range(N):
             execute = bool(solution[i])
@@ -469,32 +476,34 @@ class QuantumStrainScheduler:
 
             confidence = min(self._total_tasks / 100.0, 1.0)
 
-            results.append(StrainResult(
-                timestamp=tasks[i].timestamp,
-                task_id=tasks[i].task_id,
-                gpu_id=tasks[i].gpu_id,
-                job_id=tasks[i].job_id,
-                step_number=tasks[i].step_number,
-                verdict=verdict,
-                redundancy_score=rscore,
-                convergence_score=cscore,
-                confidence=confidence,
-                dominant_signals=conv_signals_list[i] or [],
-                decisions=decisions_per_task[i],
-                compute_saved_flops=flops_saved,
-                time_saved_s=time_saved,
-                cost_saved_usd=cost_saved,
-                quality_impact=rscore * 0.01,
-                tasks_analyzed=self._total_tasks,
-                tasks_strained=self._total_strained,
-                strain_ratio=self._total_strained / max(self._total_tasks, 1),
-                strainer_method=f"quantum_schedule:{solver_name}",
-            ))
+            results.append(
+                StrainResult(
+                    timestamp=tasks[i].timestamp,
+                    task_id=tasks[i].task_id,
+                    gpu_id=tasks[i].gpu_id,
+                    job_id=tasks[i].job_id,
+                    step_number=tasks[i].step_number,
+                    verdict=verdict,
+                    redundancy_score=rscore,
+                    convergence_score=cscore,
+                    confidence=confidence,
+                    dominant_signals=conv_signals_list[i] or [],
+                    decisions=decisions_per_task[i],
+                    compute_saved_flops=flops_saved,
+                    time_saved_s=time_saved,
+                    cost_saved_usd=cost_saved,
+                    quality_impact=rscore * 0.01,
+                    tasks_analyzed=self._total_tasks,
+                    tasks_strained=self._total_strained,
+                    strain_ratio=self._total_strained / max(self._total_tasks, 1),
+                    strainer_method=f"quantum_schedule:{solver_name}",
+                )
+            )
 
         return results
 
     @property
-    def stats(self) -> Dict:
+    def stats(self) -> dict:
         """Cumulative scheduler statistics."""
         return {
             "batches_scheduled": self._batches_scheduled,
@@ -507,13 +516,12 @@ class QuantumStrainScheduler:
             "total_cost_saved_usd": self._total_cost_saved,
             "total_solve_time_s": self._total_solve_time,
             "avg_qubo_energy": (
-                float(np.mean(self._qubo_energies))
-                if self._qubo_energies else 0.0
+                float(np.mean(self._qubo_energies)) if self._qubo_energies else 0.0
             ),
             "solver_used": "auto",
         }
 
     @property
-    def qubo_energies(self) -> List[float]:
+    def qubo_energies(self) -> list[float]:
         """QUBO energies from all batches — tracks optimisation quality."""
         return list(self._qubo_energies)

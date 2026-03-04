@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Dict, List, Optional
 
-from qstrainer.models.frame import ComputeTask
 from qstrainer.models.enums import ComputePhase, JobType
+from qstrainer.models.frame import ComputeTask
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +35,11 @@ class NVMLIngestor:
 
     def __init__(self, node_id: str = "node-00") -> None:
         self.node_id = node_id
-        self._handles: List = []
-        self._gpu_ids: List[str] = []
+        self._handles: list = []
+        self._gpu_ids: list[str] = []
         self._device_count: int = 0
         self._initialised: bool = False
-        self._step_counter: Dict[str, int] = {}
+        self._step_counter: dict[str, int] = {}
 
     # ── Lifecycle ───────────────────────────────────────────
     def init(self) -> int:
@@ -69,9 +68,7 @@ class NVMLIngestor:
             self._step_counter[uuid] = 0
 
         self._initialised = True
-        logger.info(
-            "NVML initialised: %d GPUs on %s", self._device_count, self.node_id
-        )
+        logger.info("NVML initialised: %d GPUs on %s", self._device_count, self.node_id)
         return self._device_count
 
     def shutdown(self) -> None:
@@ -79,6 +76,7 @@ class NVMLIngestor:
         if self._initialised:
             try:
                 import pynvml
+
                 pynvml.nvmlShutdown()
             except Exception:
                 pass
@@ -86,15 +84,14 @@ class NVMLIngestor:
             logger.info("NVML shutdown complete.")
 
     # ── Polling ─────────────────────────────────────────────
-    def poll(self) -> List[ComputeTask]:
+    def poll(self) -> list[ComputeTask]:
         """Poll all GPUs once.  Returns one ComputeTask per GPU."""
-        import pynvml
 
         if not self._initialised:
             raise RuntimeError("NVMLIngestor not initialised. Call init() first.")
 
         ts = time.time()
-        tasks: List[ComputeTask] = []
+        tasks: list[ComputeTask] = []
 
         for idx, handle in enumerate(self._handles):
             try:
@@ -103,14 +100,14 @@ class NVMLIngestor:
             except Exception as exc:
                 logger.warning(
                     "Failed to read GPU %d (%s): %s",
-                    idx, self._gpu_ids[idx], exc,
+                    idx,
+                    self._gpu_ids[idx],
+                    exc,
                 )
 
         return tasks
 
-    def _read_gpu(
-        self, idx: int, handle: object, ts: float
-    ) -> ComputeTask:
+    def _read_gpu(self, idx: int, handle: object, ts: float) -> ComputeTask:
         """Read hardware state from a single GPU and wrap as ComputeTask."""
         import pynvml
 
@@ -125,7 +122,7 @@ class NVMLIngestor:
         # Memory
         mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         mem_used_gb = mem_info.used / (1024**3)
-        mem_total_gb = mem_info.total / (1024**3)
+        mem_info.total / (1024**3)
 
         # Power
         try:
@@ -170,7 +167,7 @@ class NVMLIngestor:
             estimated_flops=sm_util * 1e12,  # rough TFLOP proxy
             estimated_time_s=1.0 / max(clock, 1),
             memory_footprint_gb=mem_used_gb,
-            compute_phase=ComputePhase.FORWARD,
+            compute_phase=ComputePhase.FORWARD_PASS,
             job_type=JobType.INFERENCE,
             convergence_score=0.0,
             param_update_magnitude=0.0,
@@ -178,8 +175,7 @@ class NVMLIngestor:
             flop_utilization=sm_util,
             throughput_samples_per_sec=clock * proc_count,
             node_id=self.node_id,
-            tags={"source": "nvml", "mem_util": f"{mem_util:.2f}",
-                  "power_w": f"{power_draw:.0f}"},
+            tags={"source": "nvml", "mem_util": f"{mem_util:.2f}", "power_w": f"{power_draw:.0f}"},
         )
 
     @property
@@ -187,5 +183,5 @@ class NVMLIngestor:
         return self._device_count
 
     @property
-    def gpu_ids(self) -> List[str]:
+    def gpu_ids(self) -> list[str]:
         return list(self._gpu_ids)

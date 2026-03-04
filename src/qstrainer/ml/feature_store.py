@@ -24,12 +24,11 @@ with ``RedisFeatureCache``.
 
 from __future__ import annotations
 
-import hashlib
 import logging
-import time
 from collections import OrderedDict
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -41,10 +40,11 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class FeatureSpec:
     """Definition of one named feature set."""
+
     name: str
     extractor: Callable  # (frame) → np.ndarray  OR  (gpu_id, base_vec) → np.ndarray
-    dim: int             # expected output dimension
-    depends: List[str] = field(default_factory=list)
+    dim: int  # expected output dimension
+    depends: list[str] = field(default_factory=list)
     description: str = ""
     # arity: 1 = (frame,)  2 = (gpu_id, vec)
     arity: int = 1
@@ -60,10 +60,10 @@ class FeatureStore:
     """
 
     def __init__(self, cache_size: int = 256) -> None:
-        self._specs: Dict[str, FeatureSpec] = {}
+        self._specs: dict[str, FeatureSpec] = {}
         self._cache_size = cache_size
         # Cache: (feature_name, gpu_id, timestamp) → np.ndarray
-        self._cache: OrderedDict[Tuple[str, str, float], np.ndarray] = OrderedDict()
+        self._cache: OrderedDict[tuple[str, str, float], np.ndarray] = OrderedDict()
 
     # ── Registration ─────────────────────────────────────────
 
@@ -73,7 +73,7 @@ class FeatureStore:
         extractor: Callable,
         dim: int,
         *,
-        depends: Optional[List[str]] = None,
+        depends: list[str] | None = None,
         description: str = "",
         arity: int = 1,
     ) -> None:
@@ -144,7 +144,9 @@ class FeatureStore:
         if result.shape[0] != spec.dim:
             logger.warning(
                 "Feature %r dimension mismatch: expected %d, got %d",
-                name, spec.dim, result.shape[0],
+                name,
+                spec.dim,
+                result.shape[0],
             )
 
         # Cache
@@ -152,10 +154,12 @@ class FeatureStore:
         if len(self._cache) > self._cache_size:
             self._cache.popitem(last=False)
 
-        return result
+        return np.asarray(result)
 
     def get_multi(
-        self, names: List[str], task: ComputeTask,
+        self,
+        names: list[str],
+        task: ComputeTask,
     ) -> np.ndarray:
         """Compute multiple feature sets and concatenate them."""
         parts = [self.get(n, task) for n in names]
@@ -181,17 +185,17 @@ class FeatureStore:
     # ── Schema / introspection ───────────────────────────────
 
     @property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> list[str]:
         """All registered feature set names."""
         return list(self._specs.keys())
 
-    def total_dim(self, names: Optional[List[str]] = None) -> int:
+    def total_dim(self, names: list[str] | None = None) -> int:
         """Total dimensionality across the requested feature sets."""
         if names is None:
             names = list(self._specs.keys())
         return sum(self._specs[n].dim for n in names if n in self._specs)
 
-    def schema(self) -> List[Dict[str, Any]]:
+    def schema(self) -> list[dict[str, Any]]:
         """Description of all registered feature sets."""
         return [
             {
@@ -228,7 +232,7 @@ class RedisFeatureCache:
         try:
             import redis as _redis
         except ImportError:
-            raise ImportError("redis is required for RedisFeatureCache")
+            raise ImportError("redis is required for RedisFeatureCache") from None
 
         self._store = store
         self._client = _redis.Redis.from_url(redis_url, decode_responses=False)

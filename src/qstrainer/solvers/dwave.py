@@ -22,9 +22,7 @@ class DWaveSolver(QUBOSolverBase):
     Same interface as SimulatedAnnealingSolver — swap freely.
     """
 
-    def __init__(
-        self, num_reads: int = 1000, annealing_time_us: int = 20
-    ) -> None:
+    def __init__(self, num_reads: int = 1000, annealing_time_us: int = 20) -> None:
         self.num_reads = num_reads
         self.annealing_time_us = annealing_time_us
         self._sampler = None
@@ -57,6 +55,7 @@ class DWaveSolver(QUBOSolverBase):
         max_w = max(abs(v) for v in qubo_dict.values()) if qubo_dict else 1.0
 
         t0 = time.perf_counter()
+        assert self._sampler is not None
         response = self._sampler.sample_qubo(
             qubo_dict,
             num_reads=self.num_reads,

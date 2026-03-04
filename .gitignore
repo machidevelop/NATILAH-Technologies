@@ -24,6 +24,9 @@ env/
 Thumbs.db
 .Rhistory
 
+# Hypothesis test database
+.hypothesis/
+
 # Checkpoints & runs (regenerable)
 qengine_checkpoints/
 

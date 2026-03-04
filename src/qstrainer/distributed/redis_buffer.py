@@ -20,12 +20,11 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Dict, List, Optional
 
 import numpy as np
 
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
 from qstrainer.models.enums import ComputePhase, JobType
+from qstrainer.models.frame import N_BASE_FEATURES, ComputeTask
 
 logger = logging.getLogger(__name__)
 
@@ -38,40 +37,42 @@ except ImportError:
 
 # Key schema
 _KEY_PREFIX = "qstrainer:"
-_TASKS_KEY = _KEY_PREFIX + "tasks:{gpu_id}"     # Sorted Set (score=timestamp)
-_META_KEY = _KEY_PREFIX + "meta:{gpu_id}"        # Hash  — latest verdict, score
-_FLEET_KEY = _KEY_PREFIX + "fleet:gpu_ids"       # Set   — all known GPU IDs
+_TASKS_KEY = _KEY_PREFIX + "tasks:{gpu_id}"  # Sorted Set (score=timestamp)
+_META_KEY = _KEY_PREFIX + "meta:{gpu_id}"  # Hash  — latest verdict, score
+_FLEET_KEY = _KEY_PREFIX + "fleet:gpu_ids"  # Set   — all known GPU IDs
 _COUNTER_KEY = _KEY_PREFIX + "stats:task_count"  # String — global task counter
 
 
 def _task_to_json(task: ComputeTask) -> str:
     """Serialise a ComputeTask to compact JSON."""
-    return json.dumps({
-        "ts": task.timestamp,
-        "tid": task.task_id,
-        "gpu": task.gpu_id,
-        "jid": task.job_id,
-        "sn": task.step_number,
-        "loss": task.loss,
-        "ld": task.loss_delta,
-        "gn": task.gradient_norm,
-        "gv": task.gradient_variance,
-        "lr": task.learning_rate,
-        "bs": task.batch_size,
-        "ep": task.epoch,
-        "epg": task.epoch_progress,
-        "efl": task.estimated_flops,
-        "ets": task.estimated_time_s,
-        "mem": task.memory_footprint_gb,
-        "cp": task.compute_phase.name,
-        "jt": task.job_type.name,
-        "cs": task.convergence_score,
-        "pum": task.param_update_magnitude,
-        "ds": task.data_similarity,
-        "fu": task.flop_utilization,
-        "thr": task.throughput_samples_per_sec,
-        "node": task.node_id,
-    })
+    return json.dumps(
+        {
+            "ts": task.timestamp,
+            "tid": task.task_id,
+            "gpu": task.gpu_id,
+            "jid": task.job_id,
+            "sn": task.step_number,
+            "loss": task.loss,
+            "ld": task.loss_delta,
+            "gn": task.gradient_norm,
+            "gv": task.gradient_variance,
+            "lr": task.learning_rate,
+            "bs": task.batch_size,
+            "ep": task.epoch,
+            "epg": task.epoch_progress,
+            "efl": task.estimated_flops,
+            "ets": task.estimated_time_s,
+            "mem": task.memory_footprint_gb,
+            "cp": task.compute_phase.name,
+            "jt": task.job_type.name,
+            "cs": task.convergence_score,
+            "pum": task.param_update_magnitude,
+            "ds": task.data_similarity,
+            "fu": task.flop_utilization,
+            "thr": task.throughput_samples_per_sec,
+            "node": task.node_id,
+        }
+    )
 
 
 def _json_to_task(data: str) -> ComputeTask:
@@ -132,23 +133,19 @@ class RedisBuffer:
         pipeline_batch: int = 50,
     ) -> None:
         if not _HAS_REDIS:
-            raise ImportError(
-                "redis is required. Install with: pip install redis"
-            )
+            raise ImportError("redis is required. Install with: pip install redis")
         self._url = redis_url
         self._max_tasks = max_tasks_per_gpu
         self._prefix = key_prefix
         self._ttl = ttl_seconds
         self._batch_size = pipeline_batch
-        self._client: Optional[redis.Redis] = None
+        self._client: redis.Redis | None = None
 
     # ── Connection ───────────────────────────────────────────
 
-    def _ensure_connected(self) -> "redis.Redis":
+    def _ensure_connected(self) -> redis.Redis:
         if self._client is None:
-            self._client = redis.Redis.from_url(
-                self._url, decode_responses=True
-            )
+            self._client = redis.Redis.from_url(self._url, decode_responses=True)
             logger.info("RedisBuffer connected to %s", self._url)
         return self._client
 
@@ -168,7 +165,7 @@ class RedisBuffer:
         pipe.incr(self._counter_key())
         pipe.execute()
 
-    def push_batch(self, tasks: List[ComputeTask]) -> None:
+    def push_batch(self, tasks: list[ComputeTask]) -> None:
         """Push multiple tasks efficiently using Redis pipelines."""
         if not tasks:
             return
@@ -192,7 +189,7 @@ class RedisBuffer:
 
     # ── Read path ────────────────────────────────────────────
 
-    def get_window(self, gpu_id: str, n_tasks: int) -> List[ComputeTask]:
+    def get_window(self, gpu_id: str, n_tasks: int) -> list[ComputeTask]:
         """Return the last *n_tasks* for a GPU (most recent last)."""
         r = self._ensure_connected()
         key = self._tasks_key(gpu_id)
@@ -206,7 +203,7 @@ class RedisBuffer:
             return np.empty((0, N_BASE_FEATURES))
         return np.vstack([t.to_vector() for t in tasks])
 
-    def get_latest(self, gpu_id: str) -> Optional[ComputeTask]:
+    def get_latest(self, gpu_id: str) -> ComputeTask | None:
         """Return the most recent task for a GPU."""
         r = self._ensure_connected()
         key = self._tasks_key(gpu_id)
@@ -218,7 +215,7 @@ class RedisBuffer:
     # ── Fleet queries ────────────────────────────────────────
 
     @property
-    def gpu_ids(self) -> List[str]:
+    def gpu_ids(self) -> list[str]:
         """All known GPU IDs across the fleet."""
         r = self._ensure_connected()
         return list(r.smembers(self._fleet_key()))
@@ -233,7 +230,7 @@ class RedisBuffer:
     def task_count(self, gpu_id: str) -> int:
         """Number of tasks currently stored for a specific GPU."""
         r = self._ensure_connected()
-        return r.zcard(self._tasks_key(gpu_id))
+        return int(r.zcard(self._tasks_key(gpu_id)))
 
     # ── Metadata ─────────────────────────────────────────────
 
@@ -241,14 +238,17 @@ class RedisBuffer:
         """Update the latest strain verdict for a GPU."""
         r = self._ensure_connected()
         key = f"{self._prefix}meta:{gpu_id}"
-        r.hset(key, mapping={
-            "verdict": verdict,
-            "redundancy_score": str(redundancy_score),
-            "updated_at": str(time.time()),
-        })
+        r.hset(
+            key,
+            mapping={
+                "verdict": verdict,
+                "redundancy_score": str(redundancy_score),
+                "updated_at": str(time.time()),
+            },
+        )
         r.expire(key, self._ttl)
 
-    def get_gpu_meta(self, gpu_id: str) -> Optional[Dict]:
+    def get_gpu_meta(self, gpu_id: str) -> dict | None:
         """Get the latest metadata for a GPU."""
         r = self._ensure_connected()
         key = f"{self._prefix}meta:{gpu_id}"
@@ -261,7 +261,7 @@ class RedisBuffer:
             "updated_at": float(data.get("updated_at", "0.0")),
         }
 
-    def fleet_summary(self) -> Dict[str, Dict]:
+    def fleet_summary(self) -> dict[str, dict]:
         """Return verdict metadata for every known GPU."""
         result = {}
         for gpu_id in self.gpu_ids:
@@ -271,7 +271,7 @@ class RedisBuffer:
 
     # ── Cleanup ──────────────────────────────────────────────
 
-    def clear(self, gpu_id: Optional[str] = None) -> None:
+    def clear(self, gpu_id: str | None = None) -> None:
         """Remove tasks (and metadata) for one or all GPUs."""
         r = self._ensure_connected()
         if gpu_id:

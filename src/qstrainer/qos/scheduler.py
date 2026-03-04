@@ -15,7 +15,6 @@ quantum backend (Qiskit Runtime > QAOA sim > D-Wave > SA).
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 from qstrainer.solvers.base import QUBOSolverBase
 
@@ -26,29 +25,27 @@ class QOSScheduler:
     """Routes QUBO jobs to the best available solver."""
 
     def __init__(self) -> None:
-        self._solvers: Dict[str, QUBOSolverBase] = {}
-        self._preference_order: List[Tuple[int, str]] = []
+        self._solvers: dict[str, QUBOSolverBase] = {}
+        self._preference_order: list[tuple[int, str]] = []
 
-    def register_solver(
-        self, name: str, solver: QUBOSolverBase, priority: int = 50
-    ) -> None:
+    def register_solver(self, name: str, solver: QUBOSolverBase, priority: int = 50) -> None:
         """Register a solver backend.  Lower priority = preferred."""
         self._solvers[name] = solver
         self._preference_order.append((priority, name))
         self._preference_order.sort()
 
-    def available_solvers(self) -> List[str]:
+    def available_solvers(self) -> list[str]:
         return [name for _, name in self._preference_order]
 
-    def get_solver(self, name: str) -> Optional[QUBOSolverBase]:
+    def get_solver(self, name: str) -> QUBOSolverBase | None:
         return self._solvers.get(name)
 
     def select_solver(
         self,
         n_variables: int,
-        prefer: Optional[str] = None,
-        max_time_s: Optional[float] = None,
-    ) -> Tuple[str, QUBOSolverBase]:
+        prefer: str | None = None,
+        max_time_s: float | None = None,
+    ) -> tuple[str, QUBOSolverBase]:
         """Select the best solver for a QUBO of given size.
 
         Returns (solver_name, solver_instance).
@@ -94,12 +91,12 @@ class QOSScheduler:
         return name, self._solvers[name]
 
     @classmethod
-    def from_config(cls, cfg: dict) -> "QOSScheduler":
+    def from_config(cls, cfg: dict) -> QOSScheduler:
         """Build a scheduler from a config dict, registering default solvers."""
-        from qstrainer.solvers.sa import SimulatedAnnealingSolver
-        from qstrainer.solvers.qaoa import QAOASolver
         from qstrainer.solvers.dwave import DWaveSolver
         from qstrainer.solvers.mock import MockQuantumSolver
+        from qstrainer.solvers.qaoa import QAOASolver
+        from qstrainer.solvers.sa import SimulatedAnnealingSolver
 
         sched = cls()
 

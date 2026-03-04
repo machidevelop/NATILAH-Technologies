@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import List, Optional
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -23,23 +22,19 @@ logger = logging.getLogger(__name__)
 class QuantumKernelDetector:
     """Anomaly detector using quantum kernel + OneClassSVM."""
 
-    def __init__(
-        self, n_qubits: int = 8, nu: float = 0.05, reps: int = 2
-    ) -> None:
+    def __init__(self, n_qubits: int = 8, nu: float = 0.05, reps: int = 2) -> None:
         self.n_qubits = n_qubits
         self.nu = nu
-        self.kernel_provider = QuantumKernelProvider(
-            n_qubits=n_qubits, reps=reps
-        )
-        self._model: Optional[OneClassSVM] = None
-        self._scaler: Optional[StandardScaler] = None
-        self._selected_features: Optional[List[int]] = None
-        self._X_train: Optional[np.ndarray] = None
+        self.kernel_provider = QuantumKernelProvider(n_qubits=n_qubits, reps=reps)
+        self._model: OneClassSVM | None = None
+        self._scaler: StandardScaler | None = None
+        self._selected_features: list[int] | None = None
+        self._X_train: np.ndarray | None = None
 
     def train(
         self,
         X_normal: np.ndarray,
-        selected_features: Optional[List[int]] = None,
+        selected_features: list[int] | None = None,
         max_train_samples: int = 80,
     ) -> None:
         self._selected_features = selected_features
@@ -55,13 +50,11 @@ class QuantumKernelDetector:
             )
             X_scaled = X_scaled[idx]
 
+        X_proj = X_scaled[:, : self.n_qubits] if X_scaled.shape[1] > self.n_qubits else X_scaled
         X_proj = (
-            X_scaled[:, : self.n_qubits]
-            if X_scaled.shape[1] > self.n_qubits
-            else X_scaled
-        )
-        X_proj = np.pi * (X_proj - X_proj.min(axis=0)) / (
-            X_proj.max(axis=0) - X_proj.min(axis=0) + 1e-10
+            np.pi
+            * (X_proj - X_proj.min(axis=0))
+            / (X_proj.max(axis=0) - X_proj.min(axis=0) + 1e-10)
         )
         self._X_train = X_proj
 
@@ -86,12 +79,8 @@ class QuantumKernelDetector:
             x = x[self._selected_features]
         x = self._scaler.transform(x.reshape(1, -1))  # type: ignore[union-attr]
 
-        x_proj = (
-            x[0, : self.n_qubits] if x.shape[1] > self.n_qubits else x[0]
-        )
-        x_proj = np.clip(
-            np.pi * (x_proj - 0) / (np.pi + 1e-10), 0, np.pi
-        )
+        x_proj = x[0, : self.n_qubits] if x.shape[1] > self.n_qubits else x[0]
+        x_proj = np.clip(np.pi * (x_proj - 0) / (np.pi + 1e-10), 0, np.pi)
 
         k_vec = np.array(
             [

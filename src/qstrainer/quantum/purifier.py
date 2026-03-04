@@ -22,16 +22,15 @@ to schedule — reducing makespan and GPU idle time.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
 
 import numpy as np
 
 from qstrainer.quantum.conflict_graph import ConflictGraph
 from qstrainer.quantum.qaoa_circuit import SamplerOutput
 
-
 # ── Result container ─────────────────────────────────────────
+
 
 @dataclass
 class PurificationResult:
@@ -41,12 +40,13 @@ class PurificationResult:
     purified_edges: int
     edges_dropped: int
     drop_ratio: float
-    resolution_frequencies: np.ndarray   # per-edge resolution freq
+    resolution_frequencies: np.ndarray  # per-edge resolution freq
     threshold_used: float
     purified_graph: ConflictGraph
 
 
 # ── GraphPurifier ────────────────────────────────────────────
+
 
 class GraphPurifier:
     """Purify a conflict graph using QAOA bitstring samples.

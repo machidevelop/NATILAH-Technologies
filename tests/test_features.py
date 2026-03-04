@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from qstrainer.features.derived import (
     DerivedFeatureExtractor,
@@ -37,4 +36,3 @@ class TestDerivedFeatureExtractor:
             extended = ext.extract("GPU-B", base)
         # First 15 features should match the base vector
         np.testing.assert_array_almost_equal(extended[:N_BASE_FEATURES], base)
-

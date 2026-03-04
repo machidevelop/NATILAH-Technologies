@@ -17,17 +17,16 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional
 
 import numpy as np
 
 from qstrainer.models.alert import StrainDecision, StrainResult
-from qstrainer.models.enums import TaskVerdict, StrainAction
+from qstrainer.models.enums import TaskVerdict
 from qstrainer.models.frame import ComputeTask
 from qstrainer.stages.ml import PredictiveStrainer
 from qstrainer.stages.statistical import ConvergenceStrainer
 from qstrainer.stages.threshold import RedundancyStrainer
-from qstrainer.tracing import trace_stage, add_span_event
+from qstrainer.tracing import trace_stage
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,9 @@ class QStrainer:
 
     def __init__(
         self,
-        redundancy: Optional[RedundancyStrainer] = None,
-        convergence: Optional[ConvergenceStrainer] = None,
-        predictor: Optional[PredictiveStrainer] = None,
+        redundancy: RedundancyStrainer | None = None,
+        convergence: ConvergenceStrainer | None = None,
+        predictor: PredictiveStrainer | None = None,
         strain_threshold: float = 0.5,
         heartbeat_interval: int = 100,
     ) -> None:
@@ -55,15 +54,15 @@ class QStrainer:
 
         # Cumulative counters
         self._task_count: int = 0
-        self._strained_count: int = 0   # tasks that were skipped/approximated/deferred
-        self._executed_count: int = 0    # tasks that passed through
+        self._strained_count: int = 0  # tasks that were skipped/approximated/deferred
+        self._executed_count: int = 0  # tasks that passed through
         self._total_flops_saved: float = 0.0
         self._total_time_saved: float = 0.0
         self._total_cost_saved: float = 0.0
-        self._verdict_counts: Dict[str, int] = defaultdict(int)
+        self._verdict_counts: dict[str, int] = defaultdict(int)
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "QStrainer":
+    def from_config(cls, cfg: dict) -> QStrainer:
         pc = cfg.get("pipeline", {})
         return cls(
             redundancy=RedundancyStrainer.from_config(cfg),
@@ -73,9 +72,7 @@ class QStrainer:
             heartbeat_interval=pc.get("heartbeat_interval", 100),
         )
 
-    def process_task(
-        self, task: ComputeTask
-    ) -> StrainResult:
+    def process_task(self, task: ComputeTask) -> StrainResult:
         """Process one compute task through the three-stage strainer.
 
         Always returns a StrainResult — either EXECUTE (do the work)
@@ -83,7 +80,7 @@ class QStrainer:
         """
         self._task_count += 1
         vec = task.to_vector()
-        decisions: List[StrainDecision] = []
+        decisions: list[StrainDecision] = []
 
         # ── Stage 1: Redundancy check (deterministic, <0.1 ms) ──
         with trace_stage("redundancy_check", gpu_id=task.gpu_id):
@@ -94,7 +91,9 @@ class QStrainer:
         has_skip = any(d.verdict == TaskVerdict.SKIP for d in redundancy_decisions)
         if has_skip:
             return self._make_result(
-                task, vec, TaskVerdict.SKIP,
+                task,
+                vec,
+                TaskVerdict.SKIP,
                 redundancy_score=1.0,
                 convergence_score=task.convergence_score,
                 decisions=decisions,
@@ -103,9 +102,7 @@ class QStrainer:
 
         # ── Stage 2: Convergence scoring (Welford's, <1 ms) ──
         with trace_stage("convergence_score", gpu_id=task.gpu_id):
-            conv_score, conv_signals = self.convergence.update_and_score(
-                task.gpu_id, vec
-            )
+            conv_score, conv_signals = self.convergence.update_and_score(task.gpu_id, vec)
 
         # ── Stage 3: Predictive scoring (<10 ms) ──
         with trace_stage("predictive_score", gpu_id=task.gpu_id):
@@ -126,7 +123,8 @@ class QStrainer:
         if redundancy_decisions:
             # Stage 1 found soft signals — boost redundancy score
             stage1_boost = sum(
-                0.2 for d in redundancy_decisions
+                0.2
+                for d in redundancy_decisions
                 if d.verdict in (TaskVerdict.APPROXIMATE, TaskVerdict.DEFER)
             )
             redundancy_score = min(redundancy_score + stage1_boost, 1.0)
@@ -143,7 +141,9 @@ class QStrainer:
             verdict = TaskVerdict.EXECUTE
 
         return self._make_result(
-            task, vec, verdict,
+            task,
+            vec,
+            verdict,
             redundancy_score=redundancy_score,
             convergence_score=conv_score,
             decisions=decisions,
@@ -152,11 +152,13 @@ class QStrainer:
         )
 
     def _make_result(
-        self, task: ComputeTask, vec: np.ndarray,
+        self,
+        task: ComputeTask,
+        vec: np.ndarray,
         verdict: TaskVerdict,
         redundancy_score: float,
         convergence_score: float,
-        decisions: List[StrainDecision],
+        decisions: list[StrainDecision],
         dominant: list | None = None,
         method: str = "",
     ) -> StrainResult:
@@ -209,15 +211,14 @@ class QStrainer:
             quality_impact=redundancy_score * 0.01,  # estimated small impact
             tasks_analyzed=self._task_count,
             tasks_strained=self._strained_count,
-            strain_ratio=(
-                self._strained_count / max(self._task_count, 1)
-            ),
+            strain_ratio=(self._strained_count / max(self._task_count, 1)),
             strainer_method=method,
         )
 
     def process_batch(
-        self, tasks: List[ComputeTask],
-    ) -> List[StrainResult]:
+        self,
+        tasks: list[ComputeTask],
+    ) -> list[StrainResult]:
         """Process multiple compute tasks.
 
         Uses vectorised scoring where possible, falls back to
@@ -234,14 +235,9 @@ class QStrainer:
             vecs[i] = t.to_vector()
 
         # 2) Batch redundancy check (per-task — lightweight)
-        batch_decisions: List[List[StrainDecision]] = [
-            self.redundancy.check(t) for t in tasks
-        ]
+        batch_decisions: list[list[StrainDecision]] = [self.redundancy.check(t) for t in tasks]
         skip_mask = np.array(
-            [
-                any(d.verdict == TaskVerdict.SKIP for d in ds)
-                for ds in batch_decisions
-            ],
+            [any(d.verdict == TaskVerdict.SKIP for d in ds) for ds in batch_decisions],
             dtype=bool,
         )
 
@@ -256,9 +252,7 @@ class QStrainer:
         # 4) ML predictive scoring (vectorised)
         if self.predictor is not None:
             if hasattr(self.predictor, "batch_score"):
-                ml_scores = np.asarray(
-                    self.predictor.batch_score(vecs), dtype=np.float64
-                )
+                ml_scores = np.asarray(self.predictor.batch_score(vecs), dtype=np.float64)
             else:
                 ml_scores = np.array(
                     [self.predictor.score(vecs[i]) for i in range(n)],
@@ -271,12 +265,14 @@ class QStrainer:
         redundancy_scores = np.maximum(conv_scores, ml_scores)
 
         # Build results
-        results: List[StrainResult] = []
+        results: list[StrainResult] = []
         for i in range(n):
             self._task_count += 1
             if skip_mask[i]:
                 result = self._make_result(
-                    tasks[i], vecs[i], TaskVerdict.SKIP,
+                    tasks[i],
+                    vecs[i],
+                    TaskVerdict.SKIP,
                     redundancy_score=1.0,
                     convergence_score=conv_scores[i],
                     decisions=batch_decisions[i],
@@ -289,7 +285,8 @@ class QStrainer:
                     score *= 0.3
                 # Apply soft decision boost
                 soft_boost = sum(
-                    0.2 for d in batch_decisions[i]
+                    0.2
+                    for d in batch_decisions[i]
                     if d.verdict in (TaskVerdict.APPROXIMATE, TaskVerdict.DEFER)
                 )
                 score = min(score + soft_boost, 1.0)
@@ -304,7 +301,9 @@ class QStrainer:
                     verdict = TaskVerdict.EXECUTE
 
                 result = self._make_result(
-                    tasks[i], vecs[i], verdict,
+                    tasks[i],
+                    vecs[i],
+                    verdict,
                     redundancy_score=float(score),
                     convergence_score=float(conv_scores[i]),
                     decisions=batch_decisions[i],
@@ -316,7 +315,7 @@ class QStrainer:
         return results
 
     @property
-    def stats(self) -> Dict:
+    def stats(self) -> dict:
         return {
             "tasks_processed": self._task_count,
             "tasks_executed": self._executed_count,

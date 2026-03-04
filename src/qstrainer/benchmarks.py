@@ -9,7 +9,7 @@ Called from the CLI via::
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -21,11 +21,11 @@ from qstrainer.pipeline.strainer import QStrainer
 def run_fleet_benchmark(
     n_gpus: int = 100,
     tasks_per_gpu: int = 100,
-    cfg: Optional[Dict[str, Any]] = None,
+    cfg: dict[str, Any] | None = None,
     redundant_rate: float = 0.02,
     converging_rate: float = 0.05,
     seed: int = 42,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Simulate a GPU fleet and measure straining efficiency.
 
     Prints results to stdout and returns a summary dict.
@@ -64,19 +64,19 @@ def run_fleet_benchmark(
             else:
                 task = gen.generate_failing(gpu_id, node_id)
 
-            result = strainer.process_task(task)
+            sr = strainer.process_task(task)
             total_tasks += 1
 
-            if result.verdict != TaskVerdict.EXECUTE:
+            if sr.verdict != TaskVerdict.EXECUTE:
                 total_strained += 1
-            if result.verdict == TaskVerdict.SKIP:
+            if sr.verdict == TaskVerdict.SKIP:
                 total_skipped += 1
-            total_flops_saved += result.compute_saved_flops
+            total_flops_saved += sr.compute_saved_flops
 
     elapsed = time.perf_counter() - t0
 
     strain_ratio = total_strained / max(total_tasks, 1)
-    result = {
+    summary: dict[str, Any] = {
         "n_gpus": n_gpus,
         "tasks_per_gpu": tasks_per_gpu,
         "total_tasks": total_tasks,
@@ -100,27 +100,27 @@ def run_fleet_benchmark(
     print(f"  Strain ratio:      {strain_ratio:.1%}")
     print(f"  FLOPs saved:       {total_flops_saved:.2e}")
     print(f"  Elapsed:           {elapsed:.2f}s")
-    print(f"  Throughput:        {result['tasks_per_sec']:,.0f} tasks/s")
+    print(f"  Throughput:        {summary['tasks_per_sec']:,.0f} tasks/s")
     print("=" * 70)
 
-    return result
+    return summary
 
 
 def run_solver_comparison(
     n_features: int = 15,
-    cfg: Optional[Dict[str, Any]] = None,
+    cfg: dict[str, Any] | None = None,
     seed: int = 42,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Compare all QUBO solvers on a synthetic feature selection problem.
 
     Prints results and returns a list of report dicts.
     """
-    from qstrainer.quantum.feature_selector import QUBOFeatureSelector
-    from qstrainer.qos.scheduler import QOSScheduler
     from qstrainer.qos.runner import QOSRunner
+    from qstrainer.qos.scheduler import QOSScheduler
+    from qstrainer.quantum.feature_selector import QUBOFeatureSelector
 
     # Build a synthetic dataset
-    rng = np.random.default_rng(seed)
+    np.random.default_rng(seed)
     gen = SyntheticTelemetryGenerator(seed=seed)
 
     if n_features <= 15:
@@ -182,20 +182,26 @@ def run_solver_comparison(
 
     reports = runner.compare_solvers(Q, solver_names=solver_names, expected_k=n_select)
 
-    print(f"\n{'Solver':<20s} {'Type':<15s} {'Energy':>10s} {'Time':>10s} "
-          f"{'Selected':>10s} {'Feasible':>10s}")
+    print(
+        f"\n{'Solver':<20s} {'Type':<15s} {'Energy':>10s} {'Time':>10s} "
+        f"{'Selected':>10s} {'Feasible':>10s}"
+    )
     print("-" * 75)
     for r in reports:
         feas = "YES" if r.feasible else "NO"
-        print(f"{r.solver_name:<20s} {r.solver_type:<15s} {r.energy:>10.4f} "
-              f"{r.solve_time_s:>9.3f}s {r.selected_count:>10d} {feas:>10s}")
+        print(
+            f"{r.solver_name:<20s} {r.solver_type:<15s} {r.energy:>10.4f} "
+            f"{r.solve_time_s:>9.3f}s {r.selected_count:>10d} {feas:>10s}"
+        )
 
     # Feature overlap
     solutions = {}
     for r in reports:
-        sel = frozenset(
-            i for i, v in enumerate(r.solution) if v == 1
-        ) if r.solution is not None else frozenset()
+        sel = (
+            frozenset(i for i, v in enumerate(r.solution) if v == 1)
+            if r.solution is not None
+            else frozenset()
+        )
         solutions[r.solver_name] = sel
 
     names_list = list(solutions.keys())

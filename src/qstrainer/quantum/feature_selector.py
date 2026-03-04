@@ -7,7 +7,6 @@ and solves with any registered solver (SA, QAOA, D-Wave).
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -31,7 +30,7 @@ class QUBOFeatureSelector:
         self.alpha = alpha
 
     @classmethod
-    def from_config(cls, cfg: Dict) -> "QUBOFeatureSelector":
+    def from_config(cls, cfg: dict) -> QUBOFeatureSelector:
         qc = cfg.get("qubo_selector", {})
         return cls(
             n_select=qc.get("n_select", 8),
@@ -78,8 +77,8 @@ class QUBOFeatureSelector:
         self,
         X: np.ndarray,
         y: np.ndarray,
-        solver: Optional[QUBOSolverBase] = None,
-    ) -> Tuple[List[int], QUBOResult]:
+        solver: QUBOSolverBase | None = None,
+    ) -> tuple[list[int], QUBOResult]:
         """Select optimal feature subset.
 
         Returns (selected_indices, qubo_result).
@@ -96,9 +95,7 @@ class QUBOFeatureSelector:
         if len(selected) != self.n_select:
             scores = {i: abs(Q[i, i]) for i in range(Q.shape[0])}
             if len(selected) > self.n_select:
-                selected = sorted(selected, key=lambda i: scores[i])[
-                    : self.n_select
-                ]
+                selected = sorted(selected, key=lambda i: scores[i])[: self.n_select]
             else:
                 missing = sorted(
                     [i for i in range(Q.shape[0]) if i not in selected],

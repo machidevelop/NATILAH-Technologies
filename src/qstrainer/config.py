@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ _ENV_PREFIX = "QSTRAINER_"
 _SEPARATOR = "__"
 
 
-def load_config(path: Path | str | None = None) -> Dict[str, Any]:
+def load_config(path: Path | str | None = None) -> dict[str, Any]:
     """Load configuration from YAML, then overlay environment variables.
 
     Parameters
@@ -47,12 +47,13 @@ def load_config(path: Path | str | None = None) -> Dict[str, Any]:
 
     # Resolve secret references (env://, file://, sops://, vault://)
     from qstrainer.secrets import resolve_secrets  # noqa: E402
+
     resolve_secrets(cfg)
 
     return cfg
 
 
-def _defaults() -> Dict[str, Any]:
+def _defaults() -> dict[str, Any]:
     """Sensible defaults for every config section."""
     return {
         "agent": {
@@ -139,10 +140,10 @@ def _defaults() -> Dict[str, Any]:
     }
 
 
-def _load_yaml(path: Path) -> Dict[str, Any]:
+def _load_yaml(path: Path) -> dict[str, Any]:
     """Parse a YAML file.  Falls back to empty dict on error."""
     try:
-        import yaml
+        import yaml  # type: ignore[import-untyped]
     except ImportError:
         logger.error("PyYAML not installed — cannot load %s", path)
         return {}
@@ -152,7 +153,7 @@ def _load_yaml(path: Path) -> Dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _deep_merge(base: Dict, override: Dict) -> Dict:
+def _deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge *override* into *base* (override wins)."""
     merged = dict(base)
     for k, v in override.items():
@@ -163,16 +164,16 @@ def _deep_merge(base: Dict, override: Dict) -> Dict:
     return merged
 
 
-def _apply_env_overrides(cfg: Dict[str, Any]) -> None:
+def _apply_env_overrides(cfg: dict[str, Any]) -> None:
     """Override config values with ``QSTRAINER_SECTION__KEY`` env vars."""
     for key, val in os.environ.items():
         if not key.startswith(_ENV_PREFIX):
             continue
-        parts = key[len(_ENV_PREFIX):].lower().split(_SEPARATOR)
+        parts = key[len(_ENV_PREFIX) :].lower().split(_SEPARATOR)
         _set_nested(cfg, parts, _coerce(val))
 
 
-def _set_nested(d: Dict, keys: list, value: Any) -> None:
+def _set_nested(d: dict, keys: list, value: Any) -> None:
     for k in keys[:-1]:
         d = d.setdefault(k, {})
     d[keys[-1]] = value

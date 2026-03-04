@@ -12,20 +12,17 @@ Covers:
 
 from __future__ import annotations
 
-import shutil
 import tempfile
-import time
 
 import numpy as np
-import pytest
 
 from qstrainer.ingestion.synthetic import SyntheticTelemetryGenerator
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
-
+from qstrainer.models.frame import N_BASE_FEATURES
 
 # ═══════════════════════════════════════════════════════════
 # Drift Detection
 # ═══════════════════════════════════════════════════════════
+
 
 class TestDriftDetector:
     def test_no_drift_with_same_distribution(self):
@@ -91,12 +88,10 @@ class TestOnlineRetrainer:
         dd = DriftDetector(window=100, psi_threshold=0.10)
         dd.set_baseline(rng.standard_normal((200, 5)))
 
-        retrainer = OnlineRetrainer(
-            dd, check_interval=100, min_retrain_samples=50
-        )
+        retrainer = OnlineRetrainer(dd, check_interval=100, min_retrain_samples=50)
 
         # Feed shifted data
-        for i in range(150):
+        for _i in range(150):
             vec = rng.standard_normal(5) + 5.0  # shifted
             retrainer.observe(vec, is_healthy=True)
 
@@ -122,6 +117,7 @@ class TestOnlineRetrainer:
 # ═══════════════════════════════════════════════════════════
 # Model Versioning & A/B Testing
 # ═══════════════════════════════════════════════════════════
+
 
 class TestModelRegistry:
     def test_register_and_promote(self):
@@ -182,8 +178,8 @@ class TestABTestRunner:
             # Challenger has better separation (higher variance)
             runner.record(
                 i,
-                champion_score=0.5 + rng.normal(0, 0.05),    # low variance
-                challenger_score=0.5 + rng.normal(0, 0.3),   # high variance
+                champion_score=0.5 + rng.normal(0, 0.05),  # low variance
+                challenger_score=0.5 + rng.normal(0, 0.3),  # high variance
             )
 
         decision = runner.evaluate()
@@ -200,6 +196,7 @@ class TestABTestRunner:
 # ═══════════════════════════════════════════════════════════
 # Feature Store
 # ═══════════════════════════════════════════════════════════
+
 
 class TestFeatureStore:
     def test_register_and_get(self):
@@ -283,6 +280,7 @@ class TestFeatureStore:
 # Autoscaler
 # ═══════════════════════════════════════════════════════════
 
+
 class TestAutoscaler:
     def test_hold_with_insufficient_data(self):
         from qstrainer.distributed.autoscaler import Autoscaler, ScaleAction
@@ -330,7 +328,7 @@ class TestAutoscaler:
         assert decision.desired_replicas < 5
 
     def test_respects_min_max_replicas(self):
-        from qstrainer.distributed.autoscaler import Autoscaler, ScaleAction
+        from qstrainer.distributed.autoscaler import Autoscaler
 
         auto = Autoscaler(
             target_fps_per_replica=100,
@@ -359,6 +357,7 @@ class TestAutoscaler:
 # ═══════════════════════════════════════════════════════════
 # Quantum Advantage Benchmark
 # ═══════════════════════════════════════════════════════════
+
 
 class TestQuantumAdvantageBenchmark:
     def test_benchmark_with_sa(self):
@@ -419,6 +418,7 @@ class TestQuantumAdvantageBenchmark:
 # ═══════════════════════════════════════════════════════════
 # Hybrid Solver Scheduling
 # ═══════════════════════════════════════════════════════════
+
 
 class TestHybridScheduling:
     def test_small_problem_selects_qaoa(self):

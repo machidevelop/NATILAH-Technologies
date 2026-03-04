@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from qstrainer.qos.report import QOSReport
-from qstrainer.qos.scheduler import QOSScheduler
 from qstrainer.qos.runner import QOSRunner
-from qstrainer.solvers.sa import SimulatedAnnealingSolver
+from qstrainer.qos.scheduler import QOSScheduler
 from qstrainer.solvers.mock import MockQuantumSolver
+from qstrainer.solvers.sa import SimulatedAnnealingSolver
 
 
 def _random_qubo(n: int = 10) -> np.ndarray:
@@ -92,10 +91,19 @@ class TestQOSReport:
 
     def test_summary(self):
         report = QOSReport(
-            job_id="t", job_type="t", timestamp="t",
-            solver_name="sa", solver_type="classical", backend="numpy",
-            solution=np.array([1]), energy=-1.0, solve_time_s=0.1,
-            qubo_size=1, feasible=True, selected_count=1, input_hash="x",
+            job_id="t",
+            job_type="t",
+            timestamp="t",
+            solver_name="sa",
+            solver_type="classical",
+            backend="numpy",
+            solution=np.array([1]),
+            energy=-1.0,
+            solve_time_s=0.1,
+            qubo_size=1,
+            feasible=True,
+            selected_count=1,
+            input_hash="x",
         )
         s = report.summary()
         assert "classical" in s

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from qstrainer.solvers.base import QUBOResult, QUBOSolverBase
@@ -14,7 +16,7 @@ class MockQuantumSolver(QUBOSolverBase):
     Use for integration testing of quantum code paths without hardware.
     """
 
-    def __init__(self, **sa_kwargs: int) -> None:
+    def __init__(self, **sa_kwargs: Any) -> None:
         self._inner = SimulatedAnnealingSolver(**sa_kwargs)
 
     @property

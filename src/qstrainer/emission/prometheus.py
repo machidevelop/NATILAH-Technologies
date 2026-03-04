@@ -13,8 +13,7 @@ Requires: ``pip install prometheus-client``
 from __future__ import annotations
 
 import logging
-import time
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +36,7 @@ class PrometheusEmitter:
     def __init__(self, port: int = 9090, *, start_server: bool = True) -> None:
         if not _HAS_PROM:
             raise ImportError(
-                "prometheus-client is required. "
-                "Install with: pip install prometheus-client"
+                "prometheus-client is required. Install with: pip install prometheus-client"
             )
 
         self.port = port
@@ -83,20 +81,20 @@ class PrometheusEmitter:
             self._started = True
             logger.info("Prometheus metrics server on :%d/metrics", self.port)
 
-    def emit(self, result) -> None:
+    def emit(self, result: Any) -> None:
         """Record a StrainResult."""
         self._strained_total.inc()
 
         gpu_id = getattr(result, "gpu_id", "unknown")
 
-        self._redundancy_score.labels(gpu_id=gpu_id).set(
-            result.redundancy_score
-        )
+        self._redundancy_score.labels(gpu_id=gpu_id).set(result.redundancy_score)
 
         verdict_val = result.verdict.value if hasattr(result.verdict, "value") else 0
         self._verdict_state.labels(gpu_id=gpu_id).set(verdict_val)
 
-        verdict_name = result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict)
+        verdict_name = (
+            result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict)
+        )
         self._decisions_total.labels(verdict=verdict_name).inc()
 
     def record_task(self, latency_s: float) -> None:

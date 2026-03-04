@@ -27,7 +27,6 @@ import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +40,19 @@ class ScaleAction(Enum):
 @dataclass(slots=True)
 class ScaleDecision:
     """A single scaling recommendation."""
+
     action: ScaleAction
     current_replicas: int
     desired_replicas: int
     reason: str
     timestamp: float = field(default_factory=time.time)
-    metrics: Dict[str, float] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class ThroughputSample:
     """One observation of fleet throughput."""
+
     timestamp: float
     frames_per_second: float
     active_gpus: int
@@ -98,9 +99,9 @@ class Autoscaler:
         self._window = window_size
 
         self._current_replicas: int = 1
-        self._samples: List[ThroughputSample] = []
+        self._samples: list[ThroughputSample] = []
         self._last_action_time: float = 0.0
-        self._history: List[ScaleDecision] = []
+        self._history: list[ScaleDecision] = []
 
     # ── Feed metrics ─────────────────────────────────────────
 
@@ -111,15 +112,17 @@ class Autoscaler:
         avg_latency_ms: float = 0.0,
     ) -> None:
         """Record a throughput observation."""
-        self._samples.append(ThroughputSample(
-            timestamp=time.time(),
-            frames_per_second=frames_per_second,
-            active_gpus=active_gpus,
-            avg_latency_ms=avg_latency_ms,
-        ))
+        self._samples.append(
+            ThroughputSample(
+                timestamp=time.time(),
+                frames_per_second=frames_per_second,
+                active_gpus=active_gpus,
+                avg_latency_ms=avg_latency_ms,
+            )
+        )
         # Keep only the window
         if len(self._samples) > self._window * 2:
-            self._samples = self._samples[-self._window:]
+            self._samples = self._samples[-self._window :]
 
     def set_current_replicas(self, n: int) -> None:
         """Update the autoscaler's view of current replica count."""
@@ -143,7 +146,7 @@ class Autoscaler:
             return self._decision(ScaleAction.HOLD, "cooldown active")
 
         # Average over window
-        recent = self._samples[-self._window:]
+        recent = self._samples[-self._window :]
         avg_fps = sum(s.frames_per_second for s in recent) / len(recent)
         avg_lat = sum(s.avg_latency_ms for s in recent) / len(recent)
 
@@ -163,7 +166,8 @@ class Autoscaler:
             desired = min(desired, self._max)
             if desired > self._current_replicas:
                 return self._scale(
-                    ScaleAction.SCALE_UP, desired,
+                    ScaleAction.SCALE_UP,
+                    desired,
                     f"utilisation {utilisation:.0%} > {self._up_thresh:.0%}",
                     metrics,
                 )
@@ -173,7 +177,8 @@ class Autoscaler:
             desired = max(math.ceil(avg_fps / self._target_fps), self._min)
             if desired < self._current_replicas:
                 return self._scale(
-                    ScaleAction.SCALE_DOWN, desired,
+                    ScaleAction.SCALE_DOWN,
+                    desired,
                     f"utilisation {utilisation:.0%} < {self._down_thresh:.0%}",
                     metrics,
                 )
@@ -187,8 +192,10 @@ class Autoscaler:
     # ── Internals ────────────────────────────────────────────
 
     def _decision(
-        self, action: ScaleAction, reason: str,
-        metrics: Optional[Dict[str, float]] = None,
+        self,
+        action: ScaleAction,
+        reason: str,
+        metrics: dict[str, float] | None = None,
     ) -> ScaleDecision:
         d = ScaleDecision(
             action=action,
@@ -201,8 +208,11 @@ class Autoscaler:
         return d
 
     def _scale(
-        self, action: ScaleAction, desired: int,
-        reason: str, metrics: Dict[str, float],
+        self,
+        action: ScaleAction,
+        desired: int,
+        reason: str,
+        metrics: dict[str, float],
     ) -> ScaleDecision:
         d = ScaleDecision(
             action=action,
@@ -216,7 +226,9 @@ class Autoscaler:
         self._history.append(d)
         logger.info(
             "Autoscaler: %s → %d replicas (%s)",
-            action.value, desired, reason,
+            action.value,
+            desired,
+            reason,
         )
         return d
 
@@ -227,11 +239,11 @@ class Autoscaler:
         return self._current_replicas
 
     @property
-    def history(self) -> List[ScaleDecision]:
+    def history(self) -> list[ScaleDecision]:
         return list(self._history)
 
     @classmethod
-    def from_config(cls, cfg: dict) -> "Autoscaler":
+    def from_config(cls, cfg: dict) -> Autoscaler:
         """Build from config dict."""
         ac = cfg.get("autoscaler", {})
         return cls(

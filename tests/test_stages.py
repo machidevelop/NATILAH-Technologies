@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
-from qstrainer.models.enums import TaskVerdict, StrainAction
-from qstrainer.stages.threshold import RedundancyStrainer
-from qstrainer.stages.statistical import ConvergenceStrainer
+from qstrainer.models.enums import TaskVerdict
 from qstrainer.stages.ml import PredictiveStrainer
+from qstrainer.stages.statistical import ConvergenceStrainer
+from qstrainer.stages.threshold import RedundancyStrainer
 
 
 class TestRedundancyStrainer:
@@ -88,4 +87,3 @@ class TestPredictiveStrainer:
         s1 = ps.score(X[0])
         s2 = ps2.score(X[0])
         assert abs(s1 - s2) < 1e-6
-

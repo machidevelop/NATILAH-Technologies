@@ -43,10 +43,8 @@ class QAOASolver(QUBOSolverBase):
         n = Q.shape[0]
         N = 1 << n
         k = np.arange(N, dtype=np.int64)
-        bits = ((k[:, None] >> np.arange(n, dtype=np.int64)[None, :]) & 1).astype(
-            np.float64
-        )
-        return np.einsum("ki,ij,kj->k", bits, Q, bits)
+        bits = ((k[:, None] >> np.arange(n, dtype=np.int64)[None, :]) & 1).astype(np.float64)
+        return np.asarray(np.einsum("ki,ij,kj->k", bits, Q, bits))
 
     def _apply_mixer(self, state: np.ndarray, beta: float, n: int) -> None:
         c = np.cos(beta)
@@ -59,9 +57,7 @@ class QAOASolver(QUBOSolverBase):
             view[:, 0, :] = c * s0 + ms * s1
             view[:, 1, :] = ms * s0 + c * s1
 
-    def _qaoa_eval(
-        self, params: np.ndarray, costs: np.ndarray, n: int
-    ) -> float:
+    def _qaoa_eval(self, params: np.ndarray, costs: np.ndarray, n: int) -> float:
         N = 1 << n
         state = np.full(N, 1.0 / np.sqrt(N), dtype=np.complex128)
         for layer in range(self.p):
@@ -120,8 +116,6 @@ class QAOASolver(QUBOSolverBase):
                 "optimal_gammas": best_params[: self.p].tolist(),
                 "optimal_betas": best_params[self.p :].tolist(),
                 "backend": "numpy_statevector",
-                "upgrade_path": (
-                    "qiskit.primitives.StatevectorEstimator -> IBM Runtime"
-                ),
+                "upgrade_path": ("qiskit.primitives.StatevectorEstimator -> IBM Runtime"),
             },
         )

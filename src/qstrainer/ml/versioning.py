@@ -19,13 +19,12 @@ Usage::
 
 from __future__ import annotations
 
-import json
 import logging
 import pickle
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -35,11 +34,12 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class ModelVersion:
     """Metadata for one trained model snapshot."""
+
     version_id: str
     created_at: float
-    metrics: Dict[str, float]          # training/eval metrics
-    metadata: Dict[str, Any]           # user-supplied context
-    artifact_path: Optional[str] = None
+    metrics: dict[str, float]  # training/eval metrics
+    metadata: dict[str, Any]  # user-supplied context
+    artifact_path: str | None = None
     is_champion: bool = False
     is_challenger: bool = False
 
@@ -47,6 +47,7 @@ class ModelVersion:
 @dataclass(slots=True)
 class ABResult:
     """Per-frame comparison between champion and challenger."""
+
     frame_index: int
     champion_score: float
     challenger_score: float
@@ -73,19 +74,19 @@ class ModelRegistry:
         self._dir = Path(storage_dir)
         self._dir.mkdir(parents=True, exist_ok=True)
         self._max = max_versions
-        self._versions: Dict[str, ModelVersion] = {}
-        self._champion_id: Optional[str] = None
-        self._challenger_id: Optional[str] = None
+        self._versions: dict[str, ModelVersion] = {}
+        self._champion_id: str | None = None
+        self._challenger_id: str | None = None
         self._counter: int = 0
 
     # ── Register ─────────────────────────────────────────────
 
     def register(
         self,
-        model_state: Dict,
+        model_state: dict,
         *,
-        metrics: Optional[Dict[str, float]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metrics: dict[str, float] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Register a new model version and persist its state.
 
@@ -123,9 +124,7 @@ class ModelRegistry:
         # Prune oldest versions (keep champion/challenger)
         self._prune()
 
-        logger.info(
-            "Registered model %s (metrics=%s)", vid, metrics or {}
-        )
+        logger.info("Registered model %s (metrics=%s)", vid, metrics or {})
         return vid
 
     # ── Champion / Challenger ────────────────────────────────
@@ -169,21 +168,21 @@ class ModelRegistry:
 
     # ── Load ─────────────────────────────────────────────────
 
-    def load_state(self, version_id: str) -> Dict:
+    def load_state(self, version_id: str) -> dict:
         """Load a model's state dict from disk."""
         v = self._versions.get(version_id)
         if v is None or v.artifact_path is None:
             raise KeyError(f"Version {version_id!r} not found or has no artifact")
         with open(v.artifact_path, "rb") as f:
-            return pickle.load(f)
+            return dict(pickle.load(f))
 
-    def load_champion_state(self) -> Optional[Dict]:
+    def load_champion_state(self) -> dict | None:
         """Load the champion model state (or None if no champion)."""
         if self._champion_id is None:
             return None
         return self.load_state(self._champion_id)
 
-    def load_challenger_state(self) -> Optional[Dict]:
+    def load_challenger_state(self) -> dict | None:
         """Load the challenger model state (or None if no challenger)."""
         if self._challenger_id is None:
             return None
@@ -192,14 +191,14 @@ class ModelRegistry:
     # ── Queries ──────────────────────────────────────────────
 
     @property
-    def champion_id(self) -> Optional[str]:
+    def champion_id(self) -> str | None:
         return self._champion_id
 
     @property
-    def challenger_id(self) -> Optional[str]:
+    def challenger_id(self) -> str | None:
         return self._challenger_id
 
-    def list_versions(self) -> List[ModelVersion]:
+    def list_versions(self) -> list[ModelVersion]:
         """All registered versions, newest first."""
         return sorted(
             self._versions.values(),
@@ -207,7 +206,7 @@ class ModelRegistry:
             reverse=True,
         )
 
-    def get_version(self, version_id: str) -> Optional[ModelVersion]:
+    def get_version(self, version_id: str) -> ModelVersion | None:
         return self._versions.get(version_id)
 
     # ── Pruning ──────────────────────────────────────────────
@@ -253,9 +252,9 @@ class ABTestRunner:
     ) -> None:
         self._promote_after = promote_after
         self._promote_thresh = promote_threshold
-        self._results: List[ABResult] = []
+        self._results: list[ABResult] = []
         self._decided: bool = False
-        self._decision: Optional[str] = None  # "promote" or "dismiss"
+        self._decision: str | None = None  # "promote" or "dismiss"
 
     def record(
         self,
@@ -266,15 +265,17 @@ class ABTestRunner:
         challenger_health: str = "",
     ) -> None:
         """Record one A/B observation."""
-        self._results.append(ABResult(
-            frame_index=frame_index,
-            champion_score=champion_score,
-            challenger_score=challenger_score,
-            champion_health=champion_health,
-            challenger_health=challenger_health,
-        ))
+        self._results.append(
+            ABResult(
+                frame_index=frame_index,
+                champion_score=champion_score,
+                challenger_score=challenger_score,
+                champion_health=champion_health,
+                challenger_health=challenger_health,
+            )
+        )
 
-    def evaluate(self) -> Optional[str]:
+    def evaluate(self) -> str | None:
         """Evaluate accumulated results.
 
         Returns ``"promote"``, ``"dismiss"``, or ``None`` if not enough data.
@@ -316,7 +317,7 @@ class ABTestRunner:
         return self._decision
 
     @property
-    def results(self) -> List[ABResult]:
+    def results(self) -> list[ABResult]:
         return list(self._results)
 
     @property

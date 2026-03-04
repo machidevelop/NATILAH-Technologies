@@ -6,31 +6,31 @@ The quantum advantage pipeline:
       → graph purification → fewer edges → fewer colours → smaller makespan
 """
 
-from qstrainer.quantum.feature_selector import QUBOFeatureSelector
-from qstrainer.quantum.kernel_provider import QuantumKernelProvider
-from qstrainer.quantum.kernel_detector import QuantumKernelDetector
-from qstrainer.quantum.conflict_graph import ConflictGraph, Edge
-from qstrainer.quantum.ising import (
-    qubo_to_ising,
-    ising_to_qubo,
-    qubo_energy,
-    ising_energy,
-    binary_to_spin,
-    spin_to_binary,
+from qstrainer.quantum.advantage_pipeline import (
+    PipelineConfig,
+    QuantumAdvantagePipeline,
+    QuantumScheduleResult,
 )
-from qstrainer.quantum.qaoa_circuit import QAOASampler, SamplerOutput, SampleResult
-from qstrainer.quantum.purifier import GraphPurifier, PurificationResult
 from qstrainer.quantum.coloring import (
+    ColoringResult,
     dsatur_coloring,
     makespan,
     validate_coloring,
-    ColoringResult,
 )
-from qstrainer.quantum.advantage_pipeline import (
-    QuantumAdvantagePipeline,
-    PipelineConfig,
-    QuantumScheduleResult,
+from qstrainer.quantum.conflict_graph import ConflictGraph, Edge
+from qstrainer.quantum.feature_selector import QUBOFeatureSelector
+from qstrainer.quantum.ising import (
+    binary_to_spin,
+    ising_energy,
+    ising_to_qubo,
+    qubo_energy,
+    qubo_to_ising,
+    spin_to_binary,
 )
+from qstrainer.quantum.kernel_detector import QuantumKernelDetector
+from qstrainer.quantum.kernel_provider import QuantumKernelProvider
+from qstrainer.quantum.purifier import GraphPurifier, PurificationResult
+from qstrainer.quantum.qaoa_circuit import QAOASampler, SampleResult, SamplerOutput
 
 __all__ = [
     # Existing

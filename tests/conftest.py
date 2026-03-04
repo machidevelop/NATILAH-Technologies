@@ -35,7 +35,7 @@ def failing_frame(gen: SyntheticTelemetryGenerator) -> ComputeTask:
 @pytest.fixture
 def healthy_dataset(gen: SyntheticTelemetryGenerator):
     """Return (X, y) with 200 productive + 30 converging + 10 redundant tasks.
-    
+
     y=0 for productive (valuable), y=1 for converging/redundant (strain candidates).
     """
     X_list, y_list = [], []
@@ -52,4 +52,3 @@ def healthy_dataset(gen: SyntheticTelemetryGenerator):
         X_list.append(f.to_vector())
         y_list.append(1)
     return np.vstack(X_list), np.array(y_list, dtype=np.float64)
-

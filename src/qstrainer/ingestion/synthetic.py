@@ -11,12 +11,11 @@ Calibrated to realistic ML training dynamics.
 from __future__ import annotations
 
 import time
-from typing import List
 
 import numpy as np
 
-from qstrainer.models.frame import ComputeTask
 from qstrainer.models.enums import ComputePhase, JobType
+from qstrainer.models.frame import ComputeTask
 
 
 class SyntheticTelemetryGenerator:
@@ -54,7 +53,7 @@ class SyntheticTelemetryGenerator:
             step_number=step,
             loss=loss,
             loss_delta=self.rng.uniform(-0.05, -0.001),  # improving
-            gradient_norm=self.rng.uniform(0.01, 1.0),    # meaningful gradient
+            gradient_norm=self.rng.uniform(0.01, 1.0),  # meaningful gradient
             gradient_variance=self.rng.uniform(0.001, 0.1),
             learning_rate=self.rng.uniform(1e-4, 1e-3),
             batch_size=int(self.rng.choice([32, 64, 128, 256])),
@@ -124,7 +123,7 @@ class SyntheticTelemetryGenerator:
             gpu_id=gpu_id,
             job_id=f"job-{gpu_id}",
             step_number=step,
-            loss=self.rng.uniform(0.01, 0.05),     # converged loss
+            loss=self.rng.uniform(0.01, 0.05),  # converged loss
             loss_delta=self.rng.uniform(-1e-9, 1e-9),  # flat
             gradient_norm=self.rng.uniform(1e-9, 1e-7),  # vanished
             gradient_variance=self.rng.uniform(1e-10, 1e-8),
@@ -152,9 +151,9 @@ class SyntheticTelemetryGenerator:
         n_tasks: int,
         redundant_rate: float = 0.02,
         converging_rate: float = 0.05,
-    ) -> List[ComputeTask]:
+    ) -> list[ComputeTask]:
         """Generate tasks for a fleet of GPUs."""
-        tasks: List[ComputeTask] = []
+        tasks: list[ComputeTask] = []
         for gpu_idx in range(n_gpus):
             gpu_id = f"GPU-{gpu_idx:04d}"
             node_id = f"node-{gpu_idx // 8:03d}"
@@ -172,9 +171,7 @@ class SyntheticTelemetryGenerator:
                     tasks.append(self.generate_healthy(gpu_id, node_id))
                 elif profile == "converging":
                     sev = fi / max(n_tasks - 1, 1)
-                    tasks.append(
-                        self.generate_degrading(gpu_id, node_id, sev)
-                    )
+                    tasks.append(self.generate_degrading(gpu_id, node_id, sev))
                 else:
                     tasks.append(self.generate_failing(gpu_id, node_id))
         return tasks

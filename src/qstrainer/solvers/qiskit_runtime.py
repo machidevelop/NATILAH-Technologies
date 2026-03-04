@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -35,8 +34,7 @@ _HAS_AER = False
 _HAS_RUNTIME = False
 
 try:
-    from qiskit.circuit import QuantumCircuit, Parameter
-    from qiskit.quantum_info import SparsePauliOp
+    from qiskit.circuit import QuantumCircuit
 
     _HAS_QISKIT = True
 except ImportError:
@@ -50,7 +48,7 @@ except ImportError:
     pass
 
 try:
-    from qiskit_ibm_runtime import QiskitRuntimeService, Session, SamplerV2
+    from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2, Session
 
     _HAS_RUNTIME = True
 except ImportError:
@@ -86,14 +84,12 @@ class QiskitRuntimeSolver(QUBOSolverBase):
         p: int = 1,
         shots: int = 4096,
         optimization_level: int = 1,
-        instance: Optional[str] = None,
-        token: Optional[str] = None,
+        instance: str | None = None,
+        token: str | None = None,
         max_qubits: int = 127,
     ) -> None:
         if not _HAS_QISKIT:
-            raise ImportError(
-                "qiskit is required. Install with: pip install qiskit"
-            )
+            raise ImportError("qiskit is required. Install with: pip install qiskit")
         self._backend_name = backend
         self._p = p
         self._shots = shots
@@ -118,8 +114,11 @@ class QiskitRuntimeSolver(QUBOSolverBase):
     # ── Build QAOA circuit ───────────────────────────────────
 
     def _build_qaoa_circuit(
-        self, Q: np.ndarray, gammas: np.ndarray, betas: np.ndarray,
-    ) -> "QuantumCircuit":
+        self,
+        Q: np.ndarray,
+        gammas: np.ndarray,
+        betas: np.ndarray,
+    ) -> QuantumCircuit:
         """Construct a fixed-parameter QAOA circuit for the QUBO."""
         n = Q.shape[0]
         qc = QuantumCircuit(n)
@@ -176,7 +175,7 @@ class QiskitRuntimeSolver(QUBOSolverBase):
             counts = self._execute(qc)
 
             # Evaluate all measured bitstrings
-            for bitstring, count in counts.items():
+            for bitstring, _count in counts.items():
                 bits = np.array([int(b) for b in reversed(bitstring)], dtype=int)
                 if len(bits) != n:
                     continue
@@ -200,13 +199,13 @@ class QiskitRuntimeSolver(QUBOSolverBase):
 
     # ── Backend dispatch ─────────────────────────────────────
 
-    def _execute(self, qc: "QuantumCircuit") -> Dict[str, int]:
+    def _execute(self, qc: QuantumCircuit) -> dict[str, int]:
         """Execute circuit and return measurement counts."""
         if self._backend_name == "aer":
             return self._execute_aer(qc)
         return self._execute_runtime(qc)
 
-    def _execute_aer(self, qc: "QuantumCircuit") -> Dict[str, int]:
+    def _execute_aer(self, qc: QuantumCircuit) -> dict[str, int]:
         """Local Aer simulator."""
         if not _HAS_AER:
             raise ImportError("qiskit-aer required. pip install qiskit-aer")
@@ -217,12 +216,10 @@ class QiskitRuntimeSolver(QUBOSolverBase):
         result = sim.run(tqc, shots=self._shots).result()
         return dict(result.get_counts())
 
-    def _execute_runtime(self, qc: "QuantumCircuit") -> Dict[str, int]:
+    def _execute_runtime(self, qc: QuantumCircuit) -> dict[str, int]:
         """IBM Quantum Runtime execution."""
         if not _HAS_RUNTIME:
-            raise ImportError(
-                "qiskit-ibm-runtime required. pip install qiskit-ibm-runtime"
-            )
+            raise ImportError("qiskit-ibm-runtime required. pip install qiskit-ibm-runtime")
 
         if self._service is None:
             kwargs = {}
@@ -232,6 +229,7 @@ class QiskitRuntimeSolver(QUBOSolverBase):
                 kwargs["instance"] = self._instance
             self._service = QiskitRuntimeService(**kwargs)
 
+        assert self._service is not None
         backend = self._service.backend(self._backend_name)
         from qiskit import transpile
 
@@ -244,7 +242,7 @@ class QiskitRuntimeSolver(QUBOSolverBase):
 
         # Extract counts from SamplerV2 result
         pub_result = result[0]
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         if hasattr(pub_result, "data"):
             # SamplerV2 returns BitArray in data.meas
             meas = pub_result.data.meas
@@ -253,7 +251,7 @@ class QiskitRuntimeSolver(QUBOSolverBase):
         return counts
 
     @classmethod
-    def from_config(cls, cfg: dict) -> "QiskitRuntimeSolver":
+    def from_config(cls, cfg: dict) -> QiskitRuntimeSolver:
         """Build from config dict."""
         qc = cfg.get("solvers", {}).get("qiskit", {})
         return cls(

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import os
-import pytest
 from pathlib import Path
 
-from qstrainer.config import load_config, _defaults, _deep_merge, _coerce
+from qstrainer.config import _coerce, _deep_merge, _defaults, load_config
 
 
 class TestConfigDefaults:

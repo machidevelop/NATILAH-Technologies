@@ -17,9 +17,7 @@ class QuantumKernelProvider:
     Kernel: K(x_i, x_j) = |⟨φ(x_i)|φ(x_j)⟩|²
     """
 
-    def __init__(
-        self, n_qubits: int = 8, reps: int = 2, seed: int = 42
-    ) -> None:
+    def __init__(self, n_qubits: int = 8, reps: int = 2, seed: int = 42) -> None:
         self.n_qubits = n_qubits
         self.reps = reps
         self.rng = np.random.default_rng(seed)
@@ -56,9 +54,7 @@ class QuantumKernelProvider:
             # ZZ entangling
             for q1 in range(n):
                 for q2 in range(q1 + 1, min(q1 + 3, n)):
-                    angle = (np.pi - x[q1 % len(x)]) * (
-                        np.pi - x[q2 % len(x)]
-                    )
+                    angle = (np.pi - x[q1 % len(x)]) * (np.pi - x[q2 % len(x)])
                     for k in range(N):
                         b1 = (k >> q1) & 1
                         b2 = (k >> q2) & 1
@@ -73,9 +69,7 @@ class QuantumKernelProvider:
         sv2 = self._apply_feature_map(x2)
         return float(np.abs(np.vdot(sv1, sv2)) ** 2)
 
-    def kernel_matrix(
-        self, X: np.ndarray, Y: np.ndarray | None = None
-    ) -> np.ndarray:
+    def kernel_matrix(self, X: np.ndarray, Y: np.ndarray | None = None) -> np.ndarray:
         """Compute full kernel matrix.  Symmetric if Y is None."""
         if Y is None:
             Y = X
@@ -88,9 +82,7 @@ class QuantumKernelProvider:
         K = np.zeros((n, m))
 
         sv_X = [self._apply_feature_map(X[i]) for i in range(n)]
-        sv_Y = sv_X if symmetric else [
-            self._apply_feature_map(Y[j]) for j in range(m)
-        ]
+        sv_Y = sv_X if symmetric else [self._apply_feature_map(Y[j]) for j in range(m)]
 
         for i in range(n):
             j_start = i if symmetric else 0

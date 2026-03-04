@@ -21,8 +21,7 @@ from __future__ import annotations
 import logging
 import os
 import tracemalloc
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class MemorySnapshot:
     """A single observation of process memory."""
+
     frame_count: int
     rss_mb: float
     tracemalloc_peak_mb: float
@@ -64,7 +64,7 @@ class MemoryProfiler:
         self._warn_rss_mb = warn_rss_mb
 
         self._tick_count: int = 0
-        self._snapshots: List[MemorySnapshot] = []
+        self._snapshots: list[MemorySnapshot] = []
         self._started: bool = False
 
     # ── Lifecycle ────────────────────────────────────────────
@@ -84,7 +84,7 @@ class MemoryProfiler:
 
     # ── Per-frame tick ───────────────────────────────────────
 
-    def tick(self) -> Optional[MemorySnapshot]:
+    def tick(self) -> MemorySnapshot | None:
         """Called once per frame.  Returns a snapshot at each interval."""
         self._tick_count += 1
         if self._tick_count % self._interval != 0:
@@ -111,7 +111,9 @@ class MemoryProfiler:
         if rss > self._warn_rss_mb:
             logger.warning(
                 "RSS %.1f MB exceeds threshold %.1f MB at frame %d",
-                rss, self._warn_rss_mb, self._tick_count,
+                rss,
+                self._warn_rss_mb,
+                self._tick_count,
             )
 
         return snap
@@ -144,7 +146,7 @@ class MemoryProfiler:
         return "\n".join(lines)
 
     @property
-    def snapshots(self) -> List[MemorySnapshot]:
+    def snapshots(self) -> list[MemorySnapshot]:
         return list(self._snapshots)
 
     # ── Internals ────────────────────────────────────────────
@@ -154,8 +156,9 @@ class MemoryProfiler:
         """Return current RSS in MB (cross-platform)."""
         try:
             import psutil
+
             proc = psutil.Process(os.getpid())
-            return proc.memory_info().rss / (1024 * 1024)
+            return float(proc.memory_info().rss / (1024 * 1024))
         except ImportError:
             pass
         # Fallback for Linux

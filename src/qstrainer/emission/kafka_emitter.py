@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +41,15 @@ class KafkaEmitter:
         ssl_certificate_location: str | None = None,
         ssl_key_location: str | None = None,
         ssl_key_password: str | None = None,
-        **producer_kwargs,
+        **producer_kwargs: Any,
     ) -> None:
         if not _HAS_KAFKA:
             raise ImportError(
-                "confluent-kafka is required. "
-                "Install with: pip install confluent-kafka"
+                "confluent-kafka is required. Install with: pip install confluent-kafka"
             )
 
         self._topic = topic
-        self._producer: Optional[_KafkaProducer] = None
+        self._producer: _KafkaProducer | None = None
 
         # Build config
         config = {"bootstrap.servers": bootstrap_servers}
@@ -82,18 +81,21 @@ class KafkaEmitter:
             self._producer = _KafkaProducer(self._config)
             logger.info("Kafka producer connected to %s", self._config["bootstrap.servers"])
 
-    def _delivery_callback(self, err, msg) -> None:
+    def _delivery_callback(self, err: Any, msg: Any) -> None:
         if err is not None:
             logger.error("Kafka delivery failed: %s", err)
 
-    def emit(self, result) -> None:
+    def emit(self, result: Any) -> None:
         """Publish a strain result as JSON to the configured Kafka topic."""
         self._ensure_producer()
+        assert self._producer is not None
 
         payload = {
             "gpu_id": getattr(result, "gpu_id", "unknown"),
             "timestamp": getattr(result, "timestamp", 0),
-            "verdict": result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict),
+            "verdict": (
+                result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict)
+            ),
             "redundancy_score": result.redundancy_score,
             "convergence_score": result.convergence_score,
             "confidence": result.confidence,

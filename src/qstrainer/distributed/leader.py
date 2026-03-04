@@ -28,9 +28,9 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 import threading
-from typing import Optional
+import time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -83,15 +83,15 @@ class LeaderElector:
         self._lock_key = f"{key_prefix}leader:lock"
         self._info_key = f"{key_prefix}leader:info"
 
-        self._client: Optional[redis.Redis] = None
-        self._lock: Optional[redis.lock.Lock] = None
+        self._client: redis.Redis | None = None
+        self._lock: redis.lock.Lock | None = None
         self._is_leader: bool = False
-        self._renewal_thread: Optional[threading.Thread] = None
+        self._renewal_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
     # ── Connection ───────────────────────────────────────────
 
-    def _ensure_connected(self) -> "redis.Redis":
+    def _ensure_connected(self) -> redis.Redis:
         if self._client is None:
             self._client = redis.Redis.from_url(self._url, decode_responses=True)
         return self._client
@@ -111,11 +111,14 @@ class LeaderElector:
         acquired = self._lock.acquire(blocking=False)
         if acquired:
             self._is_leader = True
-            r.hset(self._info_key, mapping={
-                "node_id": self._node_id,
-                "acquired_at": str(time.time()),
-                "pid": str(os.getpid()),
-            })
+            r.hset(
+                self._info_key,
+                mapping={
+                    "node_id": self._node_id,
+                    "acquired_at": str(time.time()),
+                    "pid": str(os.getpid()),
+                },
+            )
             r.expire(self._info_key, int(self._lease_ttl * 2))
             logger.info("Leadership acquired by %s", self._node_id)
             self._start_renewal()
@@ -142,13 +145,13 @@ class LeaderElector:
         """Whether this instance currently holds leadership."""
         return self._is_leader
 
-    def current_leader(self) -> Optional[str]:
+    def current_leader(self) -> str | None:
         """Return the node_id of the current leader, or None."""
         r = self._ensure_connected()
         info = r.hgetall(self._info_key)
         return info.get("node_id") if info else None
 
-    def leader_info(self) -> Optional[dict]:
+    def leader_info(self) -> dict | None:
         """Return full leader metadata dict."""
         r = self._ensure_connected()
         info = r.hgetall(self._info_key)
@@ -190,11 +193,11 @@ class LeaderElector:
 
     # ── Context manager ──────────────────────────────────────
 
-    def __enter__(self) -> "LeaderElector":
+    def __enter__(self) -> LeaderElector:
         self.try_acquire()
         return self
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exc: Any) -> None:
         self.release()
 
     # ── Cleanup ──────────────────────────────────────────────

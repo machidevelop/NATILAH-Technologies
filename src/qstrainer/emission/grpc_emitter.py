@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,19 +40,17 @@ class GRPCEmitter:
         ca_cert_path: str | None = None,
         client_cert_path: str | None = None,
         client_key_path: str | None = None,
-        **channel_kwargs,
+        **channel_kwargs: Any,
     ) -> None:
         if not _HAS_GRPC:
-            raise ImportError(
-                "grpcio is required. Install with: pip install grpcio"
-            )
+            raise ImportError("grpcio is required. Install with: pip install grpcio")
 
         self._target = target
         self._tls = tls
         self._ca_cert_path = ca_cert_path
         self._client_cert_path = client_cert_path
         self._client_key_path = client_key_path
-        self._channel: Optional[grpc.Channel] = None
+        self._channel: grpc.Channel | None = None
         self._connected = False
         self._channel_kwargs = channel_kwargs
 
@@ -66,9 +64,7 @@ class GRPCEmitter:
                 mode = "mTLS" if self._client_cert_path else "TLS"
                 logger.info("gRPC %s channel opened to %s", mode, self._target)
             else:
-                self._channel = grpc.insecure_channel(
-                    self._target, **self._channel_kwargs
-                )
+                self._channel = grpc.insecure_channel(self._target, **self._channel_kwargs)
                 logger.info("gRPC insecure channel opened to %s", self._target)
             self._connected = True
 
@@ -93,14 +89,16 @@ class GRPCEmitter:
             certificate_chain=client_cert,
         )
 
-    def emit(self, result) -> None:
+    def emit(self, result: Any) -> None:
         """Serialise the strain result and send via gRPC."""
         self._ensure_connected()
 
         payload = {
             "gpu_id": getattr(result, "gpu_id", "unknown"),
             "timestamp": getattr(result, "timestamp", 0),
-            "verdict": result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict),
+            "verdict": (
+                result.verdict.name if hasattr(result.verdict, "name") else str(result.verdict)
+            ),
             "redundancy_score": result.redundancy_score,
             "convergence_score": result.convergence_score,
             "confidence": result.confidence,

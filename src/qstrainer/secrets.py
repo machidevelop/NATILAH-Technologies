@@ -26,7 +26,7 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def _resolve_env(ref: str) -> str:
     """Resolve ``env://VAR_NAME`` → os.environ[VAR_NAME]."""
-    var_name = ref[len("env://"):]
+    var_name = ref[len("env://") :]
     value = os.environ.get(var_name)
     if value is None:
         raise KeyError(f"Secret env var {var_name!r} not set")
@@ -44,7 +44,7 @@ def _resolve_env(ref: str) -> str:
 
 def _resolve_file(ref: str) -> str:
     """Resolve ``file:///path/to/file`` → file contents (stripped)."""
-    path_str = ref[len("file://"):]
+    path_str = ref[len("file://") :]
     p = Path(path_str)
     if not p.exists():
         raise FileNotFoundError(f"Secret file not found: {p}")
@@ -57,7 +57,7 @@ def _resolve_sops(ref: str) -> str:
     Requires ``sops`` CLI to be installed.
     """
     # Parse: sops://path#key.subkey
-    rest = ref[len("sops://"):]
+    rest = ref[len("sops://") :]
     if "#" not in rest:
         raise ValueError(f"SOPS ref must include #key: {ref}")
     path_str, key_path = rest.split("#", 1)
@@ -65,13 +65,18 @@ def _resolve_sops(ref: str) -> str:
     try:
         result = subprocess.run(
             ["sops", "--decrypt", "--extract", f'["{key_path}"]', path_str],
-            capture_output=True, text=True, check=True, timeout=10,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
         )
         return result.stdout.strip()
     except FileNotFoundError:
-        raise RuntimeError("sops CLI not found — install from https://github.com/getsops/sops")
+        raise RuntimeError(
+            "sops CLI not found — install from https://github.com/getsops/sops"
+        ) from None
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"sops decryption failed: {e.stderr}")
+        raise RuntimeError(f"sops decryption failed: {e.stderr}") from e
 
 
 def _resolve_vault(ref: str) -> str:
@@ -80,7 +85,7 @@ def _resolve_vault(ref: str) -> str:
     Uses the ``vault`` CLI or VAULT_TOKEN + VAULT_ADDR env vars.
     Requires ``vault`` CLI to be installed.
     """
-    rest = ref[len("vault://"):]
+    rest = ref[len("vault://") :]
     if "#" not in rest:
         raise ValueError(f"Vault ref must include #key: {ref}")
     secret_path, key = rest.split("#", 1)
@@ -88,15 +93,18 @@ def _resolve_vault(ref: str) -> str:
     try:
         result = subprocess.run(
             ["vault", "kv", "get", f"-field={key}", secret_path],
-            capture_output=True, text=True, check=True, timeout=10,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
         )
         return result.stdout.strip()
     except FileNotFoundError:
         raise RuntimeError(
             "vault CLI not found — install from https://www.vaultproject.io/downloads"
-        )
+        ) from None
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Vault read failed: {e.stderr}")
+        raise RuntimeError(f"Vault read failed: {e.stderr}") from e
 
 
 _RESOLVERS = {
@@ -120,7 +128,7 @@ def resolve_value(value: str) -> str:
     return value
 
 
-def resolve_secrets(cfg: Dict[str, Any]) -> None:
+def resolve_secrets(cfg: dict[str, Any]) -> None:
     """Walk the config dict and resolve all secret references in-place.
 
     Modifies ``cfg`` by replacing string values that start with a
@@ -130,7 +138,7 @@ def resolve_secrets(cfg: Dict[str, Any]) -> None:
     _walk_and_resolve(cfg)
 
 
-def _walk_and_resolve(d: Dict[str, Any]) -> None:
+def _walk_and_resolve(d: dict[str, Any]) -> None:
     for key, value in d.items():
         if isinstance(value, dict):
             _walk_and_resolve(value)

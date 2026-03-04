@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Dict, List
 
 import numpy as np
 
-from qstrainer.models.frame import ComputeTask, N_BASE_FEATURES
+from qstrainer.models.frame import N_BASE_FEATURES, ComputeTask
 
 
 class WorkloadBuffer:
@@ -19,7 +18,7 @@ class WorkloadBuffer:
 
     def __init__(self, max_tasks_per_gpu: int = 1000) -> None:
         self.max_tasks = max_tasks_per_gpu
-        self._buffers: Dict[str, deque] = {}
+        self._buffers: dict[str, deque] = {}
         self._task_count: int = 0
 
     def push(self, task: ComputeTask) -> None:
@@ -28,7 +27,7 @@ class WorkloadBuffer:
         self._buffers[task.gpu_id].append(task)
         self._task_count += 1
 
-    def get_window(self, gpu_id: str, n_tasks: int) -> List[ComputeTask]:
+    def get_window(self, gpu_id: str, n_tasks: int) -> list[ComputeTask]:
         """Last *n_tasks* for a GPU."""
         buf = self._buffers.get(gpu_id, deque())
         return list(buf)[-n_tasks:]
@@ -41,7 +40,7 @@ class WorkloadBuffer:
         return np.vstack([t.to_vector() for t in tasks])
 
     @property
-    def gpu_ids(self) -> List[str]:
+    def gpu_ids(self) -> list[str]:
         return list(self._buffers.keys())
 
     @property

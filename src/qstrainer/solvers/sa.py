@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from typing import Tuple
 
 import numpy as np
 
@@ -20,7 +19,7 @@ class SimulatedAnnealingSolver(QUBOSolverBase):
         self,
         num_reads: int = 500,
         num_sweeps: int = 1500,
-        beta_range: Tuple[float, float] = (0.1, 5.0),
+        beta_range: tuple[float, float] = (0.1, 5.0),
         seed: int = 42,
     ) -> None:
         self.num_reads = num_reads

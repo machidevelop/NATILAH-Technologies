@@ -21,14 +21,12 @@ energy evaluation + spin/binary helpers:
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
-
 
 # ── Conversion ───────────────────────────────────────────────
 
-def qubo_to_ising(Q: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
+
+def qubo_to_ising(Q: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """Convert QUBO matrix Q to Ising parameters (h, J, offset).
 
     Substituting x_i = (1 − σ_i)/2 into E(x) = x^T Q x yields:
@@ -55,8 +53,8 @@ def qubo_to_ising(Q: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
         ising_energy(binary_to_spin(x), h, J) + offset == qubo_energy(x, Q)
         for all x ∈ {0,1}^n.
     """
-    n = Q.shape[0]
-    Qs = (Q + Q.T) / 2.0                       # symmetrise
+    Q.shape[0]
+    Qs = (Q + Q.T) / 2.0  # symmetrise
 
     # h_i = −(row_sum_i) / 2
     h = -np.sum(Qs, axis=1) / 2.0
@@ -73,7 +71,7 @@ def qubo_to_ising(Q: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
 def ising_to_qubo(
     h: np.ndarray,
     J: np.ndarray,
-) -> Tuple[np.ndarray, float]:
+) -> tuple[np.ndarray, float]:
     """Convert Ising parameters (h, J) to a QUBO matrix Q.
 
     Uses σ_i = 1 − 2 x_i in H(σ) = Σ h_i σ_i + Σ_{i<j} J_{ij} σ_i σ_j.
@@ -110,6 +108,7 @@ def ising_to_qubo(
 
 # ── Energy evaluation ────────────────────────────────────────
 
+
 def qubo_energy(x: np.ndarray, Q: np.ndarray) -> float:
     """E(x) = x^T Q x  for binary x ∈ {0,1}^n."""
     return float(x @ Q @ x)
@@ -121,6 +120,7 @@ def ising_energy(sigma: np.ndarray, h: np.ndarray, J: np.ndarray) -> float:
 
 
 # ── Spin / binary helpers ────────────────────────────────────
+
 
 def binary_to_spin(x: np.ndarray) -> np.ndarray:
     """Binary {0,1} → spin {+1,−1}.  x=0 → σ=+1, x=1 → σ=−1."""

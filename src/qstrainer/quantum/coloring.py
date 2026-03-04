@@ -18,31 +18,31 @@ usually achieves chromatic number or close to it.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from dataclasses import dataclass
 
 import numpy as np
 
 from qstrainer.quantum.conflict_graph import ConflictGraph
 
-
 # ── Result container ─────────────────────────────────────────
+
 
 @dataclass
 class ColoringResult:
     """Result from graph coloring → schedule generation."""
 
     # Coloring
-    num_colors: int                           # = makespan (time slots)
-    color_of: Dict[int, int]                  # node → colour index
-    time_slots: Dict[int, List[int]]          # colour → list of node indices
+    num_colors: int  # = makespan (time slots)
+    color_of: dict[int, int]  # node → colour index
+    time_slots: dict[int, list[int]]  # colour → list of node indices
 
     # Derived
-    max_parallelism: int                      # largest time slot
-    avg_parallelism: float                    # mean tasks per slot
+    max_parallelism: int  # largest time slot
+    avg_parallelism: float  # mean tasks per slot
 
 
 # ── DSatur coloring ──────────────────────────────────────────
+
 
 def dsatur_coloring(graph: ConflictGraph) -> ColoringResult:
     """Colour a conflict graph using the DSatur heuristic.
@@ -64,10 +64,10 @@ def dsatur_coloring(graph: ConflictGraph) -> ColoringResult:
 
     adj = graph.adjacency_matrix  # (n, n), >0 means edge
 
-    color_of: Dict[int, int] = {}
+    color_of: dict[int, int] = {}
     # saturation[v] = set of distinct colours among coloured neighbours
-    saturation: List[Set[int]] = [set() for _ in range(n)]
-    uncolored: Set[int] = set(range(n))
+    saturation: list[set[int]] = [set() for _ in range(n)]
+    uncolored: set[int] = set(range(n))
 
     # Pre-compute degrees for tie-breaking
     degrees = np.array([graph.degree(v) for v in range(n)])
@@ -101,7 +101,7 @@ def dsatur_coloring(graph: ConflictGraph) -> ColoringResult:
 
     # ── Build time-slot schedule ─────────────────────────────
     num_colors = max(color_of.values()) + 1 if color_of else 0
-    time_slots: Dict[int, List[int]] = {c: [] for c in range(num_colors)}
+    time_slots: dict[int, list[int]] = {c: [] for c in range(num_colors)}
     for v, c in color_of.items():
         time_slots[c].append(v)
 
@@ -119,6 +119,7 @@ def dsatur_coloring(graph: ConflictGraph) -> ColoringResult:
 
 
 # ── Schedule helpers ─────────────────────────────────────────
+
 
 def makespan(coloring: ColoringResult) -> int:
     """The makespan = number of time slots = chromatic number."""
