@@ -224,7 +224,11 @@ class QAOASampler:
         return SamplerOutput(
             samples=results,
             optimal_energy=self._optimal_energy,
-            optimal_params=self._optimal_params.copy() if self._optimal_params is not None else np.array([]),
+            optimal_params=(
+                self._optimal_params.copy()
+                if self._optimal_params is not None
+                else np.array([])
+            ),
             optimize_time_s=self._optimise_time,
             sample_time_s=sample_time,
             n_qubits=self._n,

@@ -16,8 +16,8 @@ Requires: ``pip install opentelemetry-api opentelemetry-sdk opentelemetry-export
 from __future__ import annotations
 
 import logging
-from contextlib import contextmanager
 from collections.abc import Generator
+from contextlib import contextmanager
 from typing import Any
 
 logger = logging.getLogger(__name__)
