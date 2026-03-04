@@ -225,9 +225,7 @@ class QAOASampler:
             samples=results,
             optimal_energy=self._optimal_energy,
             optimal_params=(
-                self._optimal_params.copy()
-                if self._optimal_params is not None
-                else np.array([])
+                self._optimal_params.copy() if self._optimal_params is not None else np.array([])
             ),
             optimize_time_s=self._optimise_time,
             sample_time_s=sample_time,
