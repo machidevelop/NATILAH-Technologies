@@ -1,0 +1,54 @@
+[
+  {
+    "n_qubits": 4,
+    "n_edges": 4,
+    "p": 1,
+    "ideal_quality": 0.5146,
+    "real_quality": 0.418,
+    "degradation": 0.0966,
+    "circuit_depth": 12,
+    "transpiled_depth": 47,
+    "depth_ratio": 3.92,
+    "gamma": 1.2339477029484385,
+    "beta": 0.3871941331964557
+  },
+  {
+    "n_qubits": 8,
+    "n_edges": 8,
+    "p": 1,
+    "ideal_quality": 0.1377,
+    "real_quality": 0.125,
+    "degradation": 0.0127,
+    "circuit_depth": 24,
+    "transpiled_depth": 87,
+    "depth_ratio": 3.62,
+    "gamma": 1.1399674167385272,
+    "beta": 0.3458507232375198
+  },
+  {
+    "n_qubits": 12,
+    "n_edges": 12,
+    "p": 1,
+    "ideal_quality": 0.0391,
+    "real_quality": 0.04,
+    "degradation": -0.0009,
+    "circuit_depth": 36,
+    "transpiled_depth": 81,
+    "depth_ratio": 2.25,
+    "gamma": 1.1361588688975592,
+    "beta": 0.3781912290734669
+  },
+  {
+    "n_qubits": 16,
+    "n_edges": 16,
+    "p": 1,
+    "ideal_quality": 0.0049,
+    "real_quality": 0.001,
+    "degradation": 0.0039,
+    "circuit_depth": 48,
+    "transpiled_depth": 171,
+    "depth_ratio": 3.56,
+    "gamma": 1.2009943409934745,
+    "beta": 0.4149310046542914
+  }
+]
