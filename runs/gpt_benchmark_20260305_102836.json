@@ -1,0 +1,78 @@
+{
+  "benchmark": "gpt2_ddp_comparison",
+  "timestamp": "20260305_102836",
+  "device": "NVIDIA GeForce GTX 1660 Ti",
+  "pytorch_version": "2.6.0+cu124",
+  "args": {
+    "epochs": 10,
+    "simulated_gpus": 4,
+    "batch_size": 16,
+    "seq_length": 128,
+    "n_layer": 4,
+    "n_head": 4,
+    "n_embd": 256,
+    "lr": 0.001,
+    "num_sequences": 1000,
+    "vocab_size": 5000,
+    "seed": 42
+  },
+  "baseline": {
+    "mode": "baseline",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 620,
+    "final_loss": 6.173934567359186,
+    "final_perplexity": 480.0712677496772,
+    "best_loss": 6.027580261230469,
+    "total_time_s": 33.10922859999937,
+    "avg_step_time_ms": 5.182421290340156,
+    "gpu_utilization": 1.0,
+    "peak_memory_mb": 438.798336,
+    "loss_history": [
+      7.024620056152344,
+      6.225240730470227,
+      6.199785647853728,
+      6.193813093246952,
+      6.187988365850141,
+      6.184224682469522,
+      6.179924272721814,
+      6.178172780621436,
+      6.177196679576751,
+      6.173934567359186
+    ]
+  },
+  "qstrainer": {
+    "mode": "qstrainer",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 463,
+    "skipped_steps": 126,
+    "approximate_steps": 31,
+    "deferred_steps": 0,
+    "final_loss": 6.176758643119566,
+    "final_perplexity": 481.42894156470663,
+    "best_loss": 6.024594306945801,
+    "total_time_s": 31.02833279999959,
+    "avg_step_time_ms": 49.895734838713494,
+    "gpu_utilization": 0.7967741935483871,
+    "peak_memory_mb": 439.044608,
+    "flops_saved": 15552510689280.0,
+    "loss_history": [
+      7.024620056152344,
+      6.225240730470227,
+      6.199785647853728,
+      6.193813093246952,
+      6.187991672946561,
+      6.184412302509431,
+      6.177836787316107,
+      6.17857519272835,
+      6.179491143072805,
+      6.176758643119566
+    ]
+  },
+  "comparison": {
+    "loss_diff_pct": 0.045741912706853384,
+    "time_saved_pct": 6.28494195723974,
+    "strain_ratio": 0.2532258064516129
+  }
+}
