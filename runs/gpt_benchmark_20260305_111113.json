@@ -1,0 +1,78 @@
+{
+  "benchmark": "gpt2_ddp_comparison",
+  "timestamp": "20260305_111113",
+  "device": "NVIDIA GeForce GTX 1660 Ti",
+  "pytorch_version": "2.6.0+cu124",
+  "args": {
+    "epochs": 10,
+    "simulated_gpus": 4,
+    "batch_size": 16,
+    "seq_length": 128,
+    "n_layer": 4,
+    "n_head": 4,
+    "n_embd": 256,
+    "lr": 0.001,
+    "num_sequences": 1000,
+    "vocab_size": 5000,
+    "seed": 456
+  },
+  "baseline": {
+    "mode": "baseline",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 620,
+    "final_loss": 6.175873817936067,
+    "final_perplexity": 481.00314951668815,
+    "best_loss": 5.994821071624756,
+    "total_time_s": 16.460606500000722,
+    "avg_step_time_ms": 5.1102237096852,
+    "gpu_utilization": 1.0,
+    "peak_memory_mb": 438.798336,
+    "loss_history": [
+      7.028790104773737,
+      6.225704446915658,
+      6.1995725477895425,
+      6.192267917817639,
+      6.185993694490002,
+      6.183269208477389,
+      6.181583504523,
+      6.178949432988321,
+      6.1761416542914604,
+      6.175873817936067
+    ]
+  },
+  "qstrainer": {
+    "mode": "qstrainer",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 434,
+    "skipped_steps": 138,
+    "approximate_steps": 48,
+    "deferred_steps": 0,
+    "final_loss": 6.178470165498795,
+    "final_perplexity": 482.25362350168626,
+    "best_loss": 5.994821071624756,
+    "total_time_s": 16.57697990000088,
+    "avg_step_time_ms": 26.614780000052694,
+    "gpu_utilization": 0.7774193548387097,
+    "peak_memory_mb": 439.044608,
+    "flops_saved": 17805701283840.0,
+    "loss_history": [
+      7.028790104773737,
+      6.225704446915658,
+      6.1995725477895425,
+      6.192267917817639,
+      6.185993694490002,
+      6.182932253806822,
+      6.178920653558547,
+      6.180358825191375,
+      6.179222499170611,
+      6.178470165498795
+    ]
+  },
+  "comparison": {
+    "loss_diff_pct": 0.04204016531536098,
+    "time_saved_pct": -0.7069812403337127,
+    "strain_ratio": 0.3
+  }
+}

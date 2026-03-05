@@ -1,0 +1,78 @@
+{
+  "benchmark": "gpt2_ddp_comparison",
+  "timestamp": "20260305_111031",
+  "device": "NVIDIA GeForce GTX 1660 Ti",
+  "pytorch_version": "2.6.0+cu124",
+  "args": {
+    "epochs": 10,
+    "simulated_gpus": 4,
+    "batch_size": 16,
+    "seq_length": 128,
+    "n_layer": 4,
+    "n_head": 4,
+    "n_embd": 256,
+    "lr": 0.001,
+    "num_sequences": 1000,
+    "vocab_size": 5000,
+    "seed": 123
+  },
+  "baseline": {
+    "mode": "baseline",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 620,
+    "final_loss": 6.174662882281888,
+    "final_perplexity": 480.42103817398834,
+    "best_loss": 5.99669075012207,
+    "total_time_s": 17.46199329999945,
+    "avg_step_time_ms": 5.373524677414084,
+    "gpu_utilization": 1.0,
+    "peak_memory_mb": 438.798336,
+    "loss_history": [
+      6.99341973950786,
+      6.224096236690398,
+      6.197937104009813,
+      6.192692295197518,
+      6.187417268753052,
+      6.1834726102890505,
+      6.180737472349597,
+      6.178390979766846,
+      6.175686628587784,
+      6.174662882281888
+    ]
+  },
+  "qstrainer": {
+    "mode": "qstrainer",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 391,
+    "skipped_steps": 180,
+    "approximate_steps": 49,
+    "deferred_steps": 0,
+    "final_loss": 6.178966975981189,
+    "final_perplexity": 482.4932716819493,
+    "best_loss": 5.996849060058594,
+    "total_time_s": 16.770126499999606,
+    "avg_step_time_ms": 26.907339193551326,
+    "gpu_utilization": 0.7096774193548387,
+    "peak_memory_mb": 439.044608,
+    "flops_saved": 22476950077440.0,
+    "loss_history": [
+      6.99341973950786,
+      6.224096236690398,
+      6.197937104009813,
+      6.192692295197518,
+      6.187021716948478,
+      6.182302359611757,
+      6.179919719696045,
+      6.180301004840482,
+      6.178977835562922,
+      6.178966975981189
+    ]
+  },
+  "comparison": {
+    "loss_diff_pct": 0.06970572776777188,
+    "time_saved_pct": 3.9621295697087757,
+    "strain_ratio": 0.36935483870967745
+  }
+}

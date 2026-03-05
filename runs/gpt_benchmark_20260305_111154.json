@@ -1,0 +1,78 @@
+{
+  "benchmark": "gpt2_ddp_comparison",
+  "timestamp": "20260305_111154",
+  "device": "NVIDIA GeForce GTX 1660 Ti",
+  "pytorch_version": "2.6.0+cu124",
+  "args": {
+    "epochs": 10,
+    "simulated_gpus": 4,
+    "batch_size": 16,
+    "seq_length": 128,
+    "n_layer": 4,
+    "n_head": 4,
+    "n_embd": 256,
+    "lr": 0.001,
+    "num_sequences": 1000,
+    "vocab_size": 5000,
+    "seed": 789
+  },
+  "baseline": {
+    "mode": "baseline",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 620,
+    "final_loss": 6.175298052449381,
+    "final_perplexity": 480.7262842165998,
+    "best_loss": 6.032992362976074,
+    "total_time_s": 16.362720900000568,
+    "avg_step_time_ms": 5.188908870883507,
+    "gpu_utilization": 1.0,
+    "peak_memory_mb": 438.798336,
+    "loss_history": [
+      6.960117270869594,
+      6.224042730946695,
+      6.199316217053321,
+      6.191473030274914,
+      6.187968569417154,
+      6.1838965954319125,
+      6.181295656388806,
+      6.1793911303243325,
+      6.176600548528856,
+      6.175298052449381
+    ]
+  },
+  "qstrainer": {
+    "mode": "qstrainer",
+    "epochs": 10,
+    "total_steps": 620,
+    "executed_steps": 400,
+    "skipped_steps": 177,
+    "approximate_steps": 43,
+    "deferred_steps": 0,
+    "final_loss": 6.1780784360824095,
+    "final_perplexity": 482.0647475677471,
+    "best_loss": 6.030015468597412,
+    "total_time_s": 16.63186719999976,
+    "avg_step_time_ms": 26.691178709637413,
+    "gpu_utilization": 0.714516129032258,
+    "peak_memory_mb": 439.044608,
+    "flops_saved": 21817479659520.0,
+    "loss_history": [
+      6.960117270869594,
+      6.224042730946695,
+      6.199316217053321,
+      6.191473030274914,
+      6.187644512422623,
+      6.183059961565079,
+      6.181173755276587,
+      6.17944545899668,
+      6.178244413868073,
+      6.1780784360824095
+    ]
+  },
+  "comparison": {
+    "loss_diff_pct": 0.0450242823814162,
+    "time_saved_pct": -1.6448749669694809,
+    "strain_ratio": 0.3548387096774194
+  }
+}
